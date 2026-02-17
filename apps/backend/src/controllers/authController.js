@@ -1,54 +1,52 @@
-const userService = require('../services/userService');
+const UserService = require('../services/userService');
 
 class AuthController {
-  async register(req, res) {
+  static async register(req, res, next) {
     try {
       const { name, email, password } = req.body;
 
       if (!name || !email || !password) {
-        return res.status(400).json({ 
-          error: "All fields are required" 
-        });
+        const error = new Error('All fields are required');
+        error.status = 400;
+        return next(error);
       }
 
-      const newUser = await userService.create({ name, email, password });
-      
-      res.status(201).json({
-        user: newUser.toJSON(),
-        message: "User registered successfully",
-      });
-    } catch (error) {
-      if (error.message === 'User already exists') {
-        return res.status(409).json({ error: error.message });
+      const newUser = await UserService.create(req.body);
+      if (!newUser) {
+        const error = new Error('Email already in use');
+        error.status = 409;
+        return next(error);
       }
-      res.status(500).json({ error: "Registration failed" });
+
+      return res.status(201).json(newUser.toJSON());
+    } catch (error) {
+      return next(error);
     }
   }
-
-  async login(req, res) {
+  static async login(req, res, next) {
     try {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res.status(400).json({ 
-          error: "Email and password are required" 
-        });
+        const error = new Error('Email and password are required');
+        error.status = 400;
+        return next(error);
       }
 
-      const user = await userService.authenticate(email, password);
-      
-      res.json({
-        user: user.toJSON(),
-        token: "mock-jwt-token-" + user.id,
-        message: "Login successful",
+      const result = await UserService.loginUser(email, password);
+      if (!result) {
+        const error = new Error('Invalid email or password');
+        error.status = 401;
+        return next(error);
+      }
+
+      return res.status(200).json({
+        ...result,
+        message: 'Login successful'
       });
     } catch (error) {
-      if (error.message === 'Invalid email or password') {
-        return res.status(401).json({ error: error.message });
-      }
-      res.status(500).json({ error: "Login failed" });
+      return next(error);     
     }
-  }
 }
-
-module.exports = new AuthController();
+}
+module.exports = AuthController;

@@ -1,75 +1,86 @@
-const userService = require('../services/userService');
+const UserService = require('../services/userService');
 
 class UserController {
-  async createUser(req, res, next) {
+  static async createUser(req, res, next) {
     try {
-      const user = await userService.createUser(req.body);
-      return res.status(201).json(user);
-    } catch (error) {
-      if (error.message === 'Email already in use') {
-        return res.status(409).json({ message: error.message });
+      const user = await UserService.createUser(req.body);
+      if (!user) {
+        const error = new Error('Email already in use');
+        error.status = 409;
+        return next(error);
       }
+      return res.status(201).json(user.toJSON());
+    } catch (error) {
       return next(error);
     }
   }
 
-  async loginUser(req, res, next) {
+  static async loginUser(req, res, next) {
     try {
       const { email, password } = req.body;
-      const result = await userService.loginUser(email, password);
+      const result = await UserService.loginUser(email, password);
+      if (!result) {
+        const error = new Error('Invalid email or password');
+        error.status = 401;
+        return next(error);
+      }
       return res.status(200).json(result);
     } catch (error) {
-      if (error.message === 'Invalid email or password') {
-        return res.status(401).json({ message: error.message });
-      }
       return next(error);
     }
   }
 
-  async getAllUsers(_req, res, next) {
+  static async getAllUsers(_req, res, next) {
     try {
-      const users = await userService.getAllUsers();
+      const users = await UserService.getAllUsers();
       return res.status(200).json(users);
     } catch (error) {
       return next(error);
     }
   }
 
-  async getUserById(req, res, next) {
+  static async getUserById(req, res, next) {
     try {
-      const user = await userService.findById(req.params.id);
+      const user = await UserService.findById(req.params.id);
+      if (!user) {
+        const error = new Error('User not found');
+        error.status = 404;
+        return next(error);
+      }
       return res.status(200).json(user);
     } catch (error) {
-      if (error.message === 'User not found') {
-        return res.status(404).json({ message: error.message });
-      }
       return next(error);
     }
+
   }
 
-  async updateUser(req, res, next) {
+  static async updateUser(req, res, next) {
     try {
-      const updatedUser = await userService.updateUser(req.params.id, req.body);
+      const updatedUser = await UserService.updateUser(req.params.id, req.body);
+      if (!updatedUser) {
+        const error = new Error('User not found');
+        error.status = 404;
+        return next(error);
+      }
       return res.status(200).json(updatedUser);
     } catch (error) {
-      if (error.message === 'User not found') {
-        return res.status(404).json({ message: error.message });
-      }
       return next(error);
     }
   }
 
-  async deleteUser(req, res, next) {
-    try {
-      const result = await userService.deleteUser(req.params.id);
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error.message === 'User not found') {
-        return res.status(404).json({ message: error.message });
-      }
+  static async deleteUser(req, res, next) {
+  try {
+    const deleted = await UserService.deleteUser(req.params.id);
+    if (!deleted) {
+      const error = new Error('User not found');
+      error.status = 404;
       return next(error);
     }
+    return res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    return next(error);
   }
 }
+}
 
-module.exports = new UserController();
+module.exports = UserController;
