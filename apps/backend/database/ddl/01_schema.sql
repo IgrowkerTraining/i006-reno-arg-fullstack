@@ -3,6 +3,10 @@ CREATE TABLE ROL (
     id_rol SERIAL PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL UNIQUE
 );
+CREATE TABLE TIPO_ETAPA (
+    id_tipo_etapa SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE
+);
 
 CREATE TABLE ESTADO (
     id_estado SERIAL PRIMARY KEY,
@@ -14,11 +18,6 @@ CREATE TABLE OFICIO (
 );
 CREATE TABLE SISTEMA_CONSTRUCTIVO (
     id_sistema SERIAL PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE INTERVENCION (
-    id_intervencion SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL
 );
 
@@ -54,22 +53,22 @@ CREATE TABLE PROYECTO (
     fecha_registro DATE DEFAULT CURRENT_DATE,
     id_responsable INTEGER NOT NULL,
     id_sistema_constructivo INTEGER,
-    tipo_intervencion INTEGER,
-    id_ART INTEGER, 
+    id_ART INTEGER,
+    matricula_responsable VARCHAR(50), 
     FOREIGN KEY (id_responsable) REFERENCES USUARIO(id_usuario),
     FOREIGN KEY (id_sistema_constructivo) REFERENCES SISTEMA_CONSTRUCTIVO(id_sistema),
-    FOREIGN KEY (tipo_intervencion) REFERENCES INTERVENCION(id_intervencion),
     FOREIGN KEY (id_ART) REFERENCES COBERTURA_ART(id_ART)
 );
 
 CREATE TABLE ETAPA (
     id_etapa SERIAL PRIMARY KEY,
     id_proyecto INTEGER NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    fecha_inicio DATE,
+    id_tipo_etapa INTEGER NOT NULL,
+    fecha_inicio DATE DEFAULT CURRENT_DATE,
     fecha_fin DATE,
     id_estado INTEGER NOT NULL,   
-    FOREIGN KEY (id_proyecto) REFERENCES PROYECTO(id_proyecto),
+    FOREIGN KEY (id_proyecto) REFERENCES PROYECTO(id_proyecto) ON DELETE CASCADE,
+    FOREIGN KEY (id_tipo_etapa) REFERENCES TIPO_ETAPA(id_tipo_etapa),
     FOREIGN KEY (id_estado) REFERENCES ESTADO(id_estado)
 );
 
@@ -81,16 +80,20 @@ CREATE TABLE ANALISIS_IA (
     FOREIGN KEY (id_proyecto) REFERENCES PROYECTO(id_proyecto)
 );
 
+CREATE TABLE TIPO_TAREA (
+    id_tipo_tarea SERIAL PRIMARY KEY,
+    id_tipo_etapa INTEGER NOT NULL,
+    nombre VARCHAR(100) NOT NULL,    
+    FOREIGN KEY (id_tipo_etapa) REFERENCES TIPO_ETAPA(id_tipo_etapa)
+);
 CREATE TABLE TAREA (
     id_tarea SERIAL PRIMARY KEY,
-    id_etapa INTEGER NOT NULL,
-    id_oficio INTEGER,
-    id_estado INTEGER DEFAULT 1,
-    descripcion TEXT NOT NULL,
-    materiales TEXT,
-    f_inicio DATE,
-    f_fin DATE,  
-    FOREIGN KEY (id_etapa) REFERENCES ETAPA(id_etapa),
+    id_etapa INTEGER NOT NULL,      
+    id_tipo_tarea INTEGER NOT NULL,  
+    id_oficio INTEGER,               
+    id_estado INTEGER DEFAULT 1,      
+    FOREIGN KEY (id_etapa) REFERENCES ETAPA(id_etapa) ON DELETE CASCADE,
+    FOREIGN KEY (id_tipo_tarea) REFERENCES TIPO_TAREA(id_tipo_tarea),
     FOREIGN KEY (id_oficio) REFERENCES OFICIO(id_oficio),
     FOREIGN KEY (id_estado) REFERENCES ESTADO(id_estado)
 );
