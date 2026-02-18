@@ -11,21 +11,21 @@ export interface ValidationResult {
 export const validateEmail = (email: string): string | null => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return 'Invalid email format';
+    return 'Formato de email no válido';
   }
   return null;
 };
 
 export const validateRequired = (value: string, fieldName: string): string | null => {
   if (!value || value.trim() === '') {
-    return `${fieldName} is required`;
+    return `${fieldName} es requerido`;
   }
   return null;
 };
 
 export const validateMinLength = (value: string, min: number): string | null => {
   if (value.length < min) {
-    return `Must be at least ${min} characters long`;
+    return `Debe tener al menos ${min} caracteres`;
   }
   return null;
 };
