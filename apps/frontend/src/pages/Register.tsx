@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "../components/common/Input";
 import { Button } from "../components/common/Button";
-import { User } from "../types";
 import { getSecurityTip } from "../services/service";
 import { api } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
@@ -12,6 +11,7 @@ const Register: React.FC = () => {
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -49,10 +49,10 @@ const Register: React.FC = () => {
 
     const newErrors: Record<string, string> = {};
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords don't match";
+      newErrors.confirmPassword = "Contraseñas no coinciden";
     }
     if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -64,27 +64,28 @@ const Register: React.FC = () => {
     try {
       const response = await api.register({
         name: formData.name,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
       });
       login(response.user);
       navigate("/dashboard");
     } catch (err: any) {
-      setServerError(err.message || "Registration failed");
+      setServerError(err.message || "Registro fallido. Por favor, intentá nuevamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-accent">
       <div className="w-full max-w-lg">
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 rounded-2xl shadow-2xl">
+        <div className="bg-primary backdrop-blur-xl border border-slate-800 p-8 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center mb-6">
             <h1 className="text-3xl font-bold text-white mb-1">
-              Create Account
+              Registrate
             </h1>
-            <p className="text-slate-400">Join the Example digital ecosystem</p>
+            <p className="text-slate-400"></p>
           </div>
 
           {serverError && (
@@ -113,9 +114,9 @@ const Register: React.FC = () => {
           >
             <div className="md:col-span-2">
               <Input
-                label="Full Name"
+                label="Nombre"
                 name="name"
-                placeholder="John Doe"
+                placeholder="Juan"
                 required
                 disabled={isLoading}
                 value={formData.name}
@@ -124,10 +125,21 @@ const Register: React.FC = () => {
             </div>
             <div className="md:col-span-2">
               <Input
-                label="Email Address"
+                label="Apellido"
+                name="lastName"
+                placeholder="Pérez"
+                required
+                disabled={isLoading}
+                value={formData.lastName}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Email"
                 name="email"
                 type="email"
-                placeholder="name@company.com"
+                placeholder="ejemplo@gmail.com"
                 required
                 disabled={isLoading}
                 value={formData.email}
@@ -135,7 +147,7 @@ const Register: React.FC = () => {
               />
             </div>
             <Input
-              label="Password"
+              label="Contraseña"
               name="password"
               type="password"
               placeholder="••••••••"
@@ -146,7 +158,7 @@ const Register: React.FC = () => {
               onChange={handleChange}
             />
             <Input
-              label="Confirm Password"
+              label="Confirmar contraseña"
               name="confirmPassword"
               type="password"
               placeholder="••••••••"
@@ -158,8 +170,8 @@ const Register: React.FC = () => {
             />
 
             <div className="md:col-span-2 mt-4">
-              <Button type="submit" className="w-full" isLoading={isLoading}>
-                Complete Registration
+              <Button type="submit" variant="secondary" className="w-full mt-4" isLoading={isLoading}>
+                Registrar
               </Button>
             </div>
           </form>
@@ -182,19 +194,22 @@ const Register: React.FC = () => {
                       d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.456-2.454L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
                     />
                   </svg>
+                  <p className="text-sm text-indigo-300 p-2">
+                    {securityTip}
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+          <div className="mt-8 pt-1 border-t border-slate-800 text-center">
             <p className="text-slate-400 text-sm">
-              Already have an account?{" "}
+              ¿Ya tenés cuenta?{" "}
               <Link
                 to="/login"
-                className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
+                className="text-secondary hover:text-accent font-semibold transition-colors"
               >
-                Sign In
+                Iniciá sesión
               </Link>
             </p>
           </div>

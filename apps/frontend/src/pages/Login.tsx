@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "../components/common/Input";
 import { Button } from "../components/common/Button";
-import { User } from "../types";
 import { api } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
 
@@ -24,18 +23,18 @@ const Login: React.FC = () => {
       login(response.user);
       navigate("/dashboard");
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+      setError(err.message || "Ocurrió un error. Por favor, intentá nuevamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-accent">
       <div className="w-full max-w-md">
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 rounded-2xl shadow-2xl">
+        <div className="bg-primary backdrop-blur-xl border border-slate-800 p-8 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-600/20">
+            <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-600/20">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -51,9 +50,9 @@ const Login: React.FC = () => {
                 />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-1">Welcome Back</h1>
+            <h1 className="text-3xl font-bold text-white mb-1">Bienvenid@</h1>
             <p className="text-slate-400">
-              Enter your credentials to access ExampleAuth
+              Ingresa tus credenciales para acceder a tu cuenta
             </p>
           </div>
 
@@ -79,8 +78,8 @@ const Login: React.FC = () => {
             )}
 
             <Input
-              label="Email Address"
-              placeholder="name@company.com"
+              label="Email"
+              placeholder="ejemplo@gmail.com"
               type="email"
               required
               disabled={isLoading}
@@ -105,7 +104,7 @@ const Login: React.FC = () => {
             />
 
             <Input
-              label="Password"
+              label="Contraseña"
               placeholder="••••••••"
               type="password"
               required
@@ -134,31 +133,31 @@ const Login: React.FC = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900"
+                  className="w-4 h-4 rounded focus:ring-accent focus:ring-offset-secondary"
                 />
-                <span className="text-sm text-slate-400">Remember me</span>
+                <span className="text-sm text-neutro-3">Recordarme</span>
               </label>
               <button
                 type="button"
-                className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                className="text-sm text-secondary hover:text-accent font-medium transition-colors"
               >
-                Forgot password?
+                ¿Olvidaste tu contraseña?
               </button>
             </div>
 
-            <Button type="submit" className="w-full mt-4" isLoading={isLoading}>
-              Sign In
+            <Button type="submit" variant="secondary" className="w-full mt-4" isLoading={isLoading}>
+              Iniciar sesión
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-800 text-center">
-            <p className="text-slate-400 text-sm">
-              Don't have an account?{" "}
+          <div className="mt-8 pt-6 border-t border-neutro-2 text-center">
+            <p className="text-neutro-2 text-sm">
+              ¿Aún no tenés cuenta?{" "}
               <Link
                 to="/register"
-                className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
+                className="text-secondary hover:text-accent font-semibold transition-colors"
               >
-                Create Account
+                Registrate
               </Link>
             </p>
           </div>

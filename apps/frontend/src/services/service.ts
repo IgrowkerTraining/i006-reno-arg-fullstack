@@ -1,24 +1,24 @@
 export const getSecurityTip = async (): Promise<string> => {
-  // Mock security tips - in production, this would call an actual AI service
+  // Mock security tips - in production, this would call an actual AI service ----------- TODO
   const tips = [
-    "Use a unique password for each account to prevent credential stuffing attacks.",
-    "Enable two-factor authentication whenever possible for an extra layer of security.",
-    "Be cautious of phishing attempts - always verify the sender before clicking links.",
-    "Use a password manager to generate and store strong, unique passwords.",
-    "Regularly review your account activity and log out from unused sessions.",
+    "Usá una contraseña única para cada cuenta para prevenir ataques de reutilización de credenciales.",
+    "Habilitá la autenticación de dos factores siempre que sea posible para una capa adicional de seguridad.",
+    "Tené cuidado con los intentos de phishing - siempre verificá el remitente antes de hacer clic en los enlaces.",
+    "Usá un gestor de contraseñas para generar y almacenar contraseñas seguras y únicas.",
+    "Revisá regularmente la actividad de tu cuenta y cerrá sesión en dispositivos o sesiones que no estés usando.",
   ];
 
   return tips[Math.floor(Math.random() * tips.length)];
 };
 
 export const getAIGreeting = async (name: string): Promise<string> => {
-  // Mock AI greetings - in production, this would call an actual AI service
+  // Mock AI greetings - in production, this would call an actual AI service ----------- TODO
   const greetings = [
-    `Welcome back, ${name}! Your digital fortress awaits.`,
-    `Hello ${name}! Ready to secure your digital identity?`,
-    `Greetings ${name}! Your portal is at your command.`,
-    `${name}, it's great to see you again! Let's make today secure.`,
-    `Welcome ${name}! Your identity ecosystem is ready for action.`,
+    `Bienvenido/a ${name}. Tu panel de gestión de obras está listo.`,
+    `Hola ${name}. Revisemos el avance y cumplimiento de tus proyectos.`,
+    `${name}, accedé al seguimiento técnico de tus obras.`,
+    `Bienvenido/a ${name}. Tenés el control de planificación y normativa en un solo lugar.`,
+    `${name}, tus proyectos están listos para continuar su seguimiento.`,
   ];
 
   return greetings[Math.floor(Math.random() * greetings.length)];
