@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
 class Project {
- constructor(projectData) {
+  constructor(projectData) {
     this.id = projectData.id_proyecto;
     this.code = projectData.codigo;
     this.name = projectData.nombre;
@@ -9,10 +9,10 @@ class Project {
     this.surfaceM2 = projectData.superficie_m2;
     this.registrationDate = projectData.fecha_registro;
     this.constructionSystemId = projectData.id_sistema_constructivo;
-    this.interventionTypeId = projectData.tipo_intervencion;
     this.artCoverageId = projectData.id_art;
     this.managerId = projectData.id_responsable;
     this.managerName = projectData.responsable_nombre;
+    this.managerLicense = projectData.matricula_responsable;
 
   }
   toJSON() {
@@ -25,15 +25,15 @@ class Project {
       registrationDate: this.registrationDate,
       manager: {
         id: this.managerId,
-        name: this.managerName
+        name: this.managerName,
+        license: this.managerLicense
       },
       config: {
         constructionSystemId: this.constructionSystemId,
-        interventionTypeId: this.interventionTypeId,
         artCoverageId: this.artCoverageId
       }
     };
-    
+
   }
   static async getAll() {
     const sql = `
@@ -58,33 +58,45 @@ class Project {
   }
 
   static async create(data) {
-    const { 
-        constructionSystemId, 
-        interventionTypeId, 
-        artCoverageId 
-    } = data.config || {}; 
+    const {
+      constructionSystemId,
+      artCoverageId = null,
+    } = data.config || {};
 
     const sql = `
       INSERT INTO PROYECTO (
         codigo, nombre, ubicacion, superficie_m2, 
-        id_responsable, id_sistema_constructivo, tipo_intervencion, id_art
+        id_responsable, id_sistema_constructivo, id_art, matricula_responsable
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *;
     `;
+
     const params = [
-      data.code, 
-      data.name, 
-      data.location, 
+      data.code,
+      data.name,
+      data.location,
       data.surfaceM2,
-      data.managerId, 
+      data.managerId,
       constructionSystemId,
-      interventionTypeId, 
-      artCoverageId
+      artCoverageId,
+      data.managerLicense
     ];
+
     const result = await db.one(sql, params);
     return new Project(result);
-}
   }
+
+  static async updateArt(artCoverageId, projectId) {
+    const sql = `
+      UPDATE PROYECTO 
+      SET id_art = $1 
+      WHERE id_proyecto = $2 
+      RETURNING *;
+    `;
+    const result = await db.oneOrNone(sql, [artCoverageId, projectId]);
+    return result ? new Project(result) : null;
+  }
+}
 
 module.exports = Project;

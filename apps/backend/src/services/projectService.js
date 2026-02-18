@@ -23,6 +23,15 @@ class ProjectService {
         }
         return await this.getProjectById(newProject.id);
     }
+    static async updateProjectArt(id, artCoverageId) {
+        const project = await Project.findById(id);
+        
+        if (!project) {
+            return null;
+        }
+        const updatedProject = await Project.updateArt(artCoverageId, id);
+        return updatedProject ? updatedProject.toJSON() : null;
+    }
 }
 
 module.exports = ProjectService;

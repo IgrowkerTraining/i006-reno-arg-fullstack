@@ -37,6 +37,27 @@ class ProjectController {
         return next(error);
        }
     }
+    static async updateProjectArt(req, res, next) {
+        try {
+            const { id } = req.params;
+            const { artCoverageId } = req.body;
+
+            const updatedProject = await ProjectService.updateProjectArt(id, artCoverageId);
+
+            if (!updatedProject) {
+                const error = new Error('Project not found or could not be updated');
+                error.status = 404;
+                return next(error);
+            }
+
+            return res.status(200).json({
+                message: 'ART coverage updated successfully',
+                project: updatedProject
+            });
+        } catch (error) {
+            return next(error);
+        }
+    }
 }
 
 module.exports = ProjectController;
