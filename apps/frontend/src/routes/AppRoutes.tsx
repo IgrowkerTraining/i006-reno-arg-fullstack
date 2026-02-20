@@ -5,12 +5,34 @@ import PublicRoute from "./PublicRoute";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
+import MisObras from "../pages/MisObras";
+import NuevaObra from "../pages/NuevaObra";
+import ObraDetalle from "../pages/ObraDetalle";
+import RegistroTareas from "../pages/RegistroTareas";
+import RegistroSeguridad from "../pages/RegistroSeguridad";
+import RegistroFinalizar from "../pages/RegistroFinalizar";
+import ReporteIA from "../pages/ReporteIA";
+import Profile from "../pages/Profile";
+import NotFound from "../pages/NotFound";
+import { ROUTES } from "../constants/routes";
+import { useAuth } from "../hooks/useAuth";
+
+const RootRedirect: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <Navigate
+      to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
+      replace
+    />
+  );
+};
 
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route
-        path="/login"
+        path={ROUTES.LOGIN}
         element={
           <PublicRoute>
             <Login />
@@ -18,7 +40,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/register"
+        path={ROUTES.REGISTER}
         element={
           <PublicRoute>
             <Register />
@@ -26,14 +48,79 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/dashboard"
+        path={ROUTES.DASHBOARD}
         element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route
+        path={ROUTES.MIS_OBRAS}
+        element={
+          <ProtectedRoute>
+            <MisObras />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.MIS_OBRAS_NUEVA}
+        element={
+          <ProtectedRoute>
+            <NuevaObra />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.OBRA_DETALLE}
+        element={
+          <ProtectedRoute>
+            <ObraDetalle />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.OBRA_REGISTRO}
+        element={
+          <ProtectedRoute>
+            <RegistroTareas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.OBRA_REGISTRO_SEGURIDAD}
+        element={
+          <ProtectedRoute>
+            <RegistroSeguridad />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.OBRA_REGISTRO_FINALIZAR}
+        element={
+          <ProtectedRoute>
+            <RegistroFinalizar />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.REPORTE_IA}
+        element={
+          <ProtectedRoute>
+            <ReporteIA />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.PROFILE}
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route path={ROUTES.HOME} element={<RootRedirect />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
