@@ -10,7 +10,7 @@ const MisObras: React.FC = () => {
       description="Listado de obras. Vista temporal para integrar diseno UX."
     >
       <div className="flex gap-3">
-        <PlaceholderActionLink to={ROUTES.MIS_OBRAS_NUEVA} label="+ Nueva obra" />
+        <PlaceholderActionLink to='/dashboard/mis-obras/nueva' label="+ Nueva obra" />
       </div>
     </PlaceholderScreen>
   );

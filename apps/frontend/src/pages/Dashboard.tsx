@@ -1,10 +1,11 @@
 import React from "react";
-import Home from "../components/home/Home";
+import DashboardLayout from "../components/layout/DashboardLayout";
+
 
 const Dashboard: React.FC = () => {
 
   return (
-    <Home />
+    <DashboardLayout />
   );
 };
 
