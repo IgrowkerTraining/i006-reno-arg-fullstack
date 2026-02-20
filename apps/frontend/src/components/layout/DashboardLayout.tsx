@@ -1,20 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import { Outlet } from "react-router-dom";
 
-interface LayoutProps {
-  children: React.ReactNode;
-  className?: string;
-}
+export const DashboardLayout: React.FC = () => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-export const DashboardLayout: React.FC<LayoutProps> = () => {
-   const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1024px)");
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+    };
+
+    setIsMobile(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  const finalCollapsed = isMobile ? true : collapsed;
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      <main className="flex-1 p-6 overflow-auto">
-         <Outlet />
+      <Sidebar collapsed={finalCollapsed} setCollapsed={setCollapsed} isMobile={isMobile} />
+      <main className="flex-1 overflow-auto min-h-screen pt-6 pr-6 lg:p-6">
+        <Outlet />
       </main>
     </div>
   );

@@ -1,20 +1,30 @@
 import React from 'react';
+import { NavLink } from "react-router-dom";
 
 interface Props {
   icon: React.ReactNode;
   label: React.ReactNode;
   collapsed: boolean;
+  link: string;
+  end?: boolean;
 }
 
-export default function SidebarItem({ icon, label, collapsed }: Props) {
+
+export default function SidebarItem({ icon, label, collapsed, link, end }: Props) {
   return (
     <div className="relative group">
-      <div className="flex items-center gap-3 p-3 
-                      hover:bg-accent hover:text-primary 
-                      cursor-pointer transition-colors rounded-full">
+      <NavLink
+        to={link}
+        end={end}
+        className={({ isActive }) =>
+          `flex items-center gap-3 p-3 rounded-full transition-colors
+           hover:bg-accent hover:text-primary
+           ${isActive ? "bg-accent text-primary" : ""}`
+        }
+      >
         {icon}
         {!collapsed && <span className="text-md text-left">{label}</span>}
-      </div>
+      </NavLink>
 
       {collapsed && (
         <div
