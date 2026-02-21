@@ -3,22 +3,24 @@ const UserService = require('../services/userService');
 class AuthController {
   static async register(req, res, next) {
     try {
-      const { name, email, password } = req.body;
+      const { name, lastName, email, password } = req.body;
 
-      if (!name || !email || !password) {
+      if (!name || !lastName || !email || !password) {
         const error = new Error('All fields are required');
         error.status = 400;
         return next(error);
       }
-
-      const newUser = await UserService.create(req.body);
+      const newUser = await UserService.createUser(req.body);
       if (!newUser) {
         const error = new Error('Email already in use');
         error.status = 409;
         return next(error);
       }
 
-      return res.status(201).json(newUser.toJSON());
+      return res.status(201).json({
+    message: 'User registered successfully',
+    user: newUser.toJSON()
+});
     } catch (error) {
       return next(error);
     }
@@ -45,8 +47,9 @@ class AuthController {
         message: 'Login successful'
       });
     } catch (error) {
-      return next(error);     
+      return next(error);
     }
-}
+  }
+
 }
 module.exports = AuthController;

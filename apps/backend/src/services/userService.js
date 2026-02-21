@@ -21,13 +21,27 @@ static async loginUser(email, password) {
     if (!user) {
       return null;
     }
+    
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return null;
     }
-    const token = jwt.sign({ id: user.id, email: user.email, rol: user.rol }, process.env.JWT_SECRET, { expiresIn: '1h' }); 
-    return { user: user.toJSON(), token };
-  }
+    const token = jwt.sign(
+        { id: user.id, email: user.email, rol: user.idRol }, 
+        process.env.JWT_SECRET, 
+        { expiresIn: '1h' }
+    ); 
+    return { 
+        user: {
+            id: user.id,
+            name: user.name,
+            lastName: user.lastName,
+            email: user.email,
+            idRol: user.idRol
+        }, 
+        token 
+    };
+}
 
   static async getAllUsers() {
     const users = await User.getAllUsers();

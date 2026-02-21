@@ -17,10 +17,11 @@ class User {
   }
 
   static async create(userData) {
-    const { name, lastName, email, password, idRol } = userData;
+    const { name, lastName, email, password} = userData;
+    const idMouckUp = 2;
     const sql = 'INSERT INTO USUARIO (nombre, apellido, email, contrasena, id_rol) VALUES ($1, $2, $3, $4, $5) RETURNING *';
 
-    const data = await db.one(sql, [name , lastName, email, password, idRol]);
+    const data = await db.one(sql, [name , lastName, email, password, idMouckUp]);
     return new User(data);
 }
 static async getAllUsers() {
