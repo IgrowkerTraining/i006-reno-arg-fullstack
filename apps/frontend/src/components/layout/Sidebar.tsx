@@ -16,7 +16,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile }: Props) {
 
     return (
         <aside
-            className={`bg-primary text-white transition-all duration-300 ${collapsed ? "w-[60px]" : "w-1/6 max-w-[260px]"
+            className={`bg-primary text-white transition-all duration-300 ${collapsed ? "w-15" : "w-1/6 max-w-65"
                 } flex flex-col m-6 rounded-[36px] shadow-lg overflow-visible`}
         >
             {/* icono abrir/cerrar | Logo */}
@@ -77,7 +77,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile }: Props) {
                             <p className="text-primary text-sm font-bold">
                                 {user?.name || "Usuario"}
                             </p>
-                            <p className="text-primary text-xs">SUPERVISOR</p>
+                            <p className="text-primary text-xs">{user?.idRol === 1 ? 'Arquitecto' : 'Supervisor'}</p>
                         </div>
                     )}
                 </Link>

@@ -11,4 +11,15 @@ const setupMiddleware = (app) => {
   });
 };
 
-module.exports = { setupMiddleware };
+const errorHandler = (app) => {
+  app.use((err, req, res, next) => {
+    console.error(err.stack);
+    const statusCode = err.status || 500;
+
+    res.status(statusCode).json({ 
+      message: err.message || 'Internal Server Error' 
+    });
+  });
+};
+
+module.exports = { setupMiddleware, errorHandler };

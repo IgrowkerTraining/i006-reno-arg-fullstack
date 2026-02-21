@@ -1,0 +1,7 @@
+const express = require('express');
+const router = express.Router();
+const CatalogController = require('../controllers/catalogController');
+
+router.get('/planning', CatalogController.getPlanningCatalog);
+
+module.exports = router;

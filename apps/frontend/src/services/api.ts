@@ -35,6 +35,9 @@ export const api = {
     if (!response.ok) {
       throw new Error(result.error || "Login failed");
     }
+    if (result.token) {
+      localStorage.setItem('token', result.token);
+    }
     return result;
   },
 
@@ -48,4 +51,22 @@ export const api = {
       return false;
     }
   },
+  async getProjects(): Promise<any[]> {
+   
+  const response = await fetch(
+    `${API_ENDPOINTS.BASE}/projects`,
+    {
+      method: "GET",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem('token')}` 
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al obtener proyectos");
+  }
+  return response.json();
+},
 };
