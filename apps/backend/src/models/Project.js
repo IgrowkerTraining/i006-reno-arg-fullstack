@@ -107,6 +107,18 @@ class Project {
     const executor = t || db;
     return await executor.one(sql, [generatedCode, id]);
   }
+
+  static async getProjectsByUserId(userId) {
+    const sql = `
+      SELECT p.*, u.nombre as responsable_nombre 
+      FROM PROYECTO p
+      INNER JOIN USUARIO u ON p.id_responsable = u.id_usuario
+      WHERE p.id_responsable = $1;
+    `;
+    const rows = await db.any(sql, [userId]);
+    
+    return rows.map(row => new Project(row));
+}
 }
 
 module.exports = Project;

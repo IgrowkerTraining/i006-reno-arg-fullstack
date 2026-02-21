@@ -24,9 +24,14 @@ export const useAuthApi = () => {
     return api.checkHealth();
   }, []);
 
+  const getProjects = useCallback(async () => {
+    return api.getProjects();
+  }, []);
+
   return {
     register,
     login,
     checkHealth,
+    getProjects,
   };
 };

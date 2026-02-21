@@ -1,10 +1,25 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "../common/Button";
 import { CardObra } from "../common/CardObra";
+import { useAuthApi } from "../../hooks/useAuthApi";
 
 const Home: React.FC = () => {
   const { user, logout } = useAuth();
+  const { getProjects } = useAuthApi();
+  const [projects, setProjects] = React.useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchObras = async () => {
+      try {
+        const data = await getProjects();
+        setProjects(data);
+      } catch (error) {
+        console.error("Error al cargar proyectos:", error);
+      }
+    };
+    fetchObras();
+  }, [getProjects]);
 
   return (
     <>
@@ -21,33 +36,27 @@ const Home: React.FC = () => {
       >
         Cerrar sesión
       </Button>
-
-      {/* Mock de obras */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CardObra
-          codigo="RENO-AR-2026-014"
-          titulo="Reforma vivienda unifamiliar"
-          ubicacion="Barrio Caballito, CABA"
-          artStatus="ok"
-          seguridadStatus="ok"
-          progreso={45}
-          responsable="Arq. Laura Perez"
-          onDetalle={() => console.log("detalle 1")}
-        />
-
-        <CardObra
-          codigo="RENO-AR-2026-015"
-          titulo="Local comercial - Av. Santa Fé"
-          ubicacion="Palermo, CABA"
-          artStatus="ok"
-          seguridadStatus="warning"
-          progreso={82}
-          responsable="Arq. Natasha Marco"
-          onDetalle={() => console.log("detalle 2")}
-        />
+        {projects && projects.length > 0 ? (
+          projects.map((obra) => (
+            <div key={obra.id}>
+              <CardObra
+                codigo={obra.code}
+                titulo={obra.name}
+                ubicacion={obra.location}
+                artStatus="ok"
+                seguridadStatus="ok"
+                progreso={45}
+                responsable={obra.manager?.name || "Sin responsable asignado"}
+                onDetalle={() => console.log("detalle", obra.id)}
+              />
+            </div>
+          ))
+        ) : (
+          <p className="col-span-2 text-slate-500">No se encontraron obras vinculadas a tu cuenta.</p>
+        )}
       </div>
     </>
   );
-};
-
+}
 export default Home;

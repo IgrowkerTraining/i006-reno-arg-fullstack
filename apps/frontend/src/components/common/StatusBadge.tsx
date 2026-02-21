@@ -11,7 +11,7 @@ export const StatusBadge = ({ label, status }: StatusBadgeProps) => {
   };
 
   return (
-    <div className="flex flex-col items-center bg-slate-100 rounded-lg p-2 min-w-[110px]">
+    <div className="flex flex-col items-center bg-slate-100 rounded-lg p-2 min-w-27.5">
       <span className="text-xs text-slate-500">{label}</span>
       <span className={`text-sm font-semibold ${statusStyles[status]}`}>
         {status.toUpperCase()}

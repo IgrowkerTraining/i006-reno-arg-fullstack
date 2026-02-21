@@ -86,5 +86,15 @@ class ProjectService {
 
     return project;
 }
+static async getUserProjects(userId) {
+    const projects = await Project.getProjectsByUserId(userId);
+        
+        if (!projects) {
+            return [];
+        }
+
+        return projects;
+    }
 }
+
 module.exports = ProjectService;
