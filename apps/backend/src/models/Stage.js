@@ -9,18 +9,27 @@ class Stage {
         this.endDate = data.fecha_fin;
         this.statusId = data.id_estado;
     }
-    static async create({ projectId, typeStageId, statusId = 1 }) {
+    static async create(stageData, tx) {
+        const connection = tx || db;
+
         const sql = `
-            INSERT INTO ETAPA (id_proyecto, id_tipo_etapa, id_estado)
-            VALUES ($1, $2, $3)
-            RETURNING *;
-        `;
-        const result = await db.one(sql, [projectId, typeStageId, statusId]);
+        INSERT INTO ETAPA (id_proyecto, id_tipo_etapa, fecha_inicio, id_estado)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *;
+    `;
+
+        const params = [
+            stageData.projectId,
+            stageData.typeStageId,
+            stageData.startDate || new Date(),
+            stageData.statusId || 1
+        ];
+
+        const result = await connection.one(sql, params);
         return new Stage(result);
     }
-
-static async findByProjectId(projectId) {
-    const sql = `
+    static async findByProjectId(projectId) {
+        const sql = `
         SELECT 
             e.*, 
             te.nombre AS tipo_nombre, 
@@ -31,16 +40,16 @@ static async findByProjectId(projectId) {
         WHERE e.id_proyecto = $1
         ORDER BY te.id_tipo_etapa ASC;
     `;
-    
-    const results = await db.any(sql, [projectId]);
-    
-    return results.map(row => {
-        const stage = new Stage(row);
-        stage.typeName = row.tipo_nombre;
-        stage.statusName = row.estado_nombre;
-        return stage;
-    });
-}
+
+        const results = await db.any(sql, [projectId]);
+
+        return results.map(row => {
+            const stage = new Stage(row);
+            stage.typeName = row.tipo_nombre;
+            stage.statusName = row.estado_nombre;
+            return stage;
+        });
+    }
 }
 
 module.exports = Stage;

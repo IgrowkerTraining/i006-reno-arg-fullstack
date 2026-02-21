@@ -2,7 +2,7 @@ const e = require('express');
 const StageService = require('../services/stageService');
 
 class StageController {
-    static async getStagesByProject(req, res) {
+    static async getStagesByProject(req, res,next) {
         try {
             const { projectId } = req.params;
             const stages = await StageService.getProjectStages(projectId);

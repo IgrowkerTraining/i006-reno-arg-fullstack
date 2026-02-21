@@ -3,9 +3,9 @@ const CatalogService = require('../services/catalogService');
 class CatalogController {
     static async getPlanningCatalog(req, res, next) {
         try {
-            const catalog = await CatalogService.getPlanningCatalog();
+            const catalog = await CatalogService.getProjectSetupData();
             
-            if (!catalog || catalog.length === 0) {
+            if (!catalog || (catalog.sistemas.length === 0 && catalog.planificacion.length === 0)) {
                 const error = new Error('Catalog not found');
                 error.status = 404;
                 return next(error);

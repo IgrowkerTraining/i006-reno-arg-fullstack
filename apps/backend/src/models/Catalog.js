@@ -1,6 +1,16 @@
 const db = require('../config/db');
 
 class Catalog {
+
+  static async getSystems() {
+    const sql = `
+      SELECT id_sistema AS id, nombre 
+      FROM SISTEMA_CONSTRUCTIVO 
+      ORDER BY id_sistema ASC;
+    `;
+    return await db.any(sql);
+  }
+
   static async getPlanningStructure() {
     const sql = `
       SELECT 
