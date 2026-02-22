@@ -25,6 +25,25 @@ class Catalog {
     const rows = await db.any(sql);
     return this._formatPlanning(rows);
   }
+  static async getTrades() {
+  const sql = `
+    SELECT 
+      id_oficio, 
+      nombre 
+    FROM OFICIO;
+  `;
+  return await db.any(sql);
+}
+static async getSafetyMeasures() {
+  const sql = `
+    SELECT 
+      id_medidas_seg AS id, 
+      descripcion AS name
+    FROM MEDIDAS_SEGURIDAD;
+  `;
+  return await db.any(sql);
+}
+
 
   static _formatPlanning(rows) {
     return rows.reduce((acc, row) => {

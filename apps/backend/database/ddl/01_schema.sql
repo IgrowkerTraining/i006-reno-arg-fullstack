@@ -98,14 +98,6 @@ CREATE TABLE TAREA (
     FOREIGN KEY (id_estado) REFERENCES ESTADO(id_estado)
 );
 
-CREATE TABLE etapa_seguridad (
-    id_etapa_seg SERIAL PRIMARY KEY,
-    id_etapa INTEGER NOT NULL,
-    id_medidas_seg INTEGER NOT NULL,   
-    FOREIGN KEY (id_etapa) REFERENCES ETAPA(id_etapa),
-    FOREIGN KEY (id_medidas_seg) REFERENCES MEDIDAS_SEGURIDAD(id_medidas_seg)
-);
-
 CREATE TABLE REGISTRO_AVANCE (
     id_registro_avance SERIAL PRIMARY KEY,
     id_etapa INTEGER NOT NULL,
@@ -148,4 +140,21 @@ CREATE TABLE VALIDACION_TECNICA (
     comentario TEXT,
     FOREIGN KEY (id_registro_avance) REFERENCES REGISTRO_AVANCE(id_registro_avance),
     FOREIGN KEY (id_responsable_tecnico) REFERENCES USUARIO(id_usuario)
+);
+CREATE TABLE REGISTRO_SEGURIDAD (
+    id_reg_seguridad SERIAL PRIMARY KEY,
+    id_registro_avance INTEGER NOT NULL,
+    id_medida_seg INTEGER NOT NULL,
+    cumple BOOLEAN DEFAULT FALSE,
+    observacion TEXT,
+    FOREIGN KEY (id_registro_avance) REFERENCES REGISTRO_AVANCE(id_registro_avance) ON DELETE CASCADE,
+    FOREIGN KEY (id_medida_seg) REFERENCES MEDIDAS_SEGURIDAD(id_medidas_seg)
+);
+
+CREATE TABLE REGISTRO_OFICIO (
+    id_reg_oficio SERIAL PRIMARY KEY,
+    id_registro_avance INTEGER NOT NULL,
+    id_oficio INTEGER NOT NULL,
+    FOREIGN KEY (id_registro_avance) REFERENCES REGISTRO_AVANCE(id_registro_avance) ON DELETE CASCADE,
+    FOREIGN KEY (id_oficio) REFERENCES OFICIO(id_oficio)
 );

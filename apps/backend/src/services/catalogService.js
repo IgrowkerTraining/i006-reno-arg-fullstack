@@ -12,5 +12,17 @@ class CatalogService {
             planificacion
         };
     }
+    static async getReportSetupData() {
+    
+    const [trades, safetyMeasures] = await Promise.all([
+        Catalog.getTrades(),
+        Catalog.getSafetyMeasures()
+    ]);
+    
+    return {
+        trades,
+        safetyMeasures
+    };
+}
 }
 module.exports = CatalogService;
