@@ -22,9 +22,9 @@ export const DashboardLayout: React.FC = () => {
   const finalCollapsed = isMobile ? true : collapsed;
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen">
       <Sidebar collapsed={finalCollapsed} setCollapsed={setCollapsed} isMobile={isMobile} />
-      <main className="flex-1 overflow-auto min-h-screen pt-6 pr-6 lg:p-6">
+      <main className="flex-1 overflow-auto min-h-screen pt-6 pr-6 lg:p-8">
         <Outlet />
       </main>
     </div>
