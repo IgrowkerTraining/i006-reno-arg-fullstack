@@ -10,7 +10,6 @@ export const ROUTES = {
   OBRA_REGISTRO_SEGURIDAD: 'mis-obras/:obraId/registro/seguridad',
   OBRA_REGISTRO_FINALIZAR: 'mis-obras/:obraId/registro/finalizar',
   REPORTE_IA: 'reporte-ia',
-  PROFILE: 'profile',
   HOME: '/',
 } as const;
 
