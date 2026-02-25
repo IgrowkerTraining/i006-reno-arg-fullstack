@@ -12,7 +12,6 @@ import RegistroTareas from "../pages/RegistroTareas";
 import RegistroSeguridad from "../pages/RegistroSeguridad";
 import RegistroFinalizar from "../pages/RegistroFinalizar";
 import ReporteIA from "../pages/ReporteIA";
-import Profile from "../pages/Profile";
 import NotFound from "../pages/NotFound";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../hooks/useAuth";
@@ -58,7 +57,6 @@ export const AppRoutes: React.FC = () => {
         <Route path={ROUTES.OBRA_REGISTRO_SEGURIDAD} element={<RegistroSeguridad />} />
         <Route path={ROUTES.OBRA_REGISTRO_FINALIZAR} element={<RegistroFinalizar />} />
         <Route path={ROUTES.REPORTE_IA} element={<ReporteIA />} />
-        <Route path={ROUTES.PROFILE} element={<Profile />} />
 
       </Route>
 

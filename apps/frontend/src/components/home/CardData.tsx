@@ -26,7 +26,7 @@ const textColorVariants = {
 
 const CardData = ({ icon: Icon, title, data, color }: CardDataProps) => {
     return (
-        <Card className={`flex flex-col items-center gap-2 ${colorVariants[color]}`}>
+        <Card className={`flex flex-col rounded-lg p-6 items-center gap-2 ${colorVariants[color]}`}>
             <Icon className={`inline size-10 mr-2 ${textColorVariants[color]} pl-0.5`} />
             <span className="text-m font-semibold text-center">{title}</span>
             <p className="text-3xl font-bold">{data}</p>
