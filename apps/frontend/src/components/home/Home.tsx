@@ -3,10 +3,12 @@ import { useAuth } from "../../hooks/useAuth";
 import { Search } from "../common/Search";
 import { Button } from "../common/Button";
 import CardData from "./CardData";
-import { ChartNoAxesCombined, ClockAlert, ListChecks, MapPin, ShieldCheck } from "lucide-react";
+import { ChartNoAxesCombined, ClockAlert, ListChecks, MapPin, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { getAIGreeting } from "@/src/services/service";
 import { api } from "@/src/services/api";
 import { Card } from "../common/Card";
+import { useNavigate } from "react-router-dom";
+import { formatDate } from "@/src/utils/formateDate";
 
 const DATA = [
   { icon: ChartNoAxesCombined, title: "Obras activas", data: "4", color: "secondary" },
@@ -16,18 +18,19 @@ const DATA = [
 ];
 
 const DATAHistorialMarzo = [
-  { title: "Ampliación planta alta - Local gastronómico", location: "San Isidro, CABA", percent: "100%", date: "15/03/2024" }
+  { title: "Ampliación planta alta - Local gastronómico", location: "San Isidro, CABA", percent: "100%", date: "2026-03-10T00:00:00.000Z" }
 
 ];
 const DATAHistorialFebrero = [
-  { title: "Reforma vivienda unifamiliar", location: "Barrio Caballito, CABA", percent: "75%", date: "10/02/2024" },
-  { title: "Local comercial - Gastronomía", location: "Palermo Soho, CABA", percent: "50%", date: "28/01/2024" },
+  { title: "Reforma vivienda unifamiliar", location: "Barrio Caballito, CABA", percent: "75%", date: "2026-02-04T00:00:00.000Z" },
+  { title: "Local comercial - Gastronomía", location: "Palermo Soho, CABA", percent: "50%", date: "2026-02-25T00:00:00.000Z" },
 ];
 
 
 const Home: React.FC = () => {
-  const { user, logout } = useAuth();
-  const [greeting, setGreeting] = useState<string>("Loading greeting...");
+  const { user } = useAuth();
+  const [greeting, setGreeting] = useState<string>("Cargando saludo de bienvenida...");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initDashboard = async () => {
@@ -44,7 +47,7 @@ const Home: React.FC = () => {
     <>
       <div className="grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
         <Search placeholder="Buscar obra..." className="mb-4 lg:col-span-3" />
-        <Button variant="secondary" onClick={() => console.log("Nuevo proyecto")} className="mb-4 lg:col-span-1">+ Nueva obra</Button>
+        {user?.idRol === 1 && <Button variant="secondary" onClick={() => navigate("/dashboard/mis-obras/nueva")} className="mb-4 lg:col-span-1">+ Nueva obra</Button>}
       </div>
       <h1 className="text-2xl font-bold mt-5">{greeting}</h1>
       <section className="mt-8 grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
@@ -53,7 +56,11 @@ const Home: React.FC = () => {
         ))}
       </section>
       <Card className="mt-8 p-6 border-neutro-3">
-        <h2 className="text-2xl font-semibold mb-4 text-primary">Historial de registros diarios</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold mb-4 text-primary">Historial de registros diarios</h2>
+          <SlidersHorizontal className="text-primary" />
+        </div>
+       
         <hr className="border-neutro-2" />
         <p className="text-lg text-primary font-bold mt-6">Marzo</p>
         <ul className="space-y-3 mt-4">
@@ -66,7 +73,7 @@ const Home: React.FC = () => {
               </div>
               <div className="col-span-1">
                 <p className="text-md font-bold text-primary">{item.percent}</p>
-                <p className="text-sm text-slate-500">{item.date}</p>
+                <p className="text-sm text-slate-500">{formatDate(item.date)}</p>
               </div>
             </li>
           ))}
@@ -82,7 +89,7 @@ const Home: React.FC = () => {
               </div>
               <div className="col-span-1">
                 <p className="text-md font-bold text-primary">{item.percent}</p>
-                <p className="text-sm text-slate-500">{item.date}</p>
+                <p className="text-sm text-slate-500">{formatDate(item.date)}</p>
               </div>
             </li>
           ))}
