@@ -64,8 +64,6 @@ class ProjectController {
             const userId = req.user.id;
             const projects = await ProjectService.getUserProjects(userId);
 
-            // Si projects es [], esto devuelve 200 con el []
-            // El frontend sabrá qué hacer.
             return res.status(200).json(projects);
 
         } catch (error) {

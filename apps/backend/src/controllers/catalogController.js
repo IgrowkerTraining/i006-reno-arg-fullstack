@@ -5,7 +5,7 @@ class CatalogController {
         try {
             const catalog = await CatalogService.getProjectSetupData();
             
-            if (!catalog || (catalog.sistemas.length === 0 && catalog.planificacion.length === 0)) {
+            if (!catalog || (catalog.systems.length === 0 && catalog.planningStructure.length === 0 && catalog.artsCoverage.length === 0)) {
                 const error = new Error('Catalog not found');
                 error.status = 404;
                 return next(error);
