@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { Search } from "../common/Search";
 import { Button } from "../common/Button";
@@ -7,8 +8,8 @@ import { ChartNoAxesCombined, ClockAlert, ListChecks, MapPin, ShieldCheck, Slide
 import { getAIGreeting } from "@/src/services/service";
 import { api } from "@/src/services/api";
 import { Card } from "../common/Card";
-import { useNavigate } from "react-router-dom";
 import { formatDate } from "@/src/utils/formateDate";
+import { ROUTES } from "../../constants/routes";
 
 const DATA = [
   { icon: ChartNoAxesCombined, title: "Obras activas", data: "4", color: "secondary" },
@@ -28,9 +29,13 @@ const DATAHistorialFebrero = [
 
 
 const Home: React.FC = () => {
-  const { user } = useAuth();
-  const [greeting, setGreeting] = useState<string>("Cargando saludo de bienvenida...");
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [greeting, setGreeting] = useState<string>("Loading greeting...");
+
+  const handleNewObraClick = () => {
+    navigate(`${ROUTES.DASHBOARD}/${ROUTES.MIS_OBRAS_NUEVA}`);
+  };
 
   useEffect(() => {
     const initDashboard = async () => {
@@ -47,7 +52,7 @@ const Home: React.FC = () => {
     <>
       <div className="grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
         <Search placeholder="Buscar obra..." className="mb-4 lg:col-span-3" />
-        {user?.idRol === 1 && <Button variant="secondary" onClick={() => navigate("/dashboard/mis-obras/nueva")} className="mb-4 lg:col-span-1">+ Nueva obra</Button>}
+        <Button variant="secondary" onClick={handleNewObraClick} className="mb-4 lg:col-span-1">+ Nueva obra</Button>
       </div>
       <h1 className="text-2xl font-bold mt-5">{greeting}</h1>
       <section className="mt-8 grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
