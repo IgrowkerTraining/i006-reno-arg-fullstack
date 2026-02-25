@@ -25,6 +25,7 @@ INSERT INTO USUARIO (nombre, apellido, email, contrasena, id_rol) VALUES
 ('Juan', 'Perez', 'juan@reno.com', 'admin123', 1),
 ('Pepe', 'Perez', 'pepe@reno.com', '123456', 2);
 
+INSERT INTO CAT_ART (nombre_entidad_ART) VALUES ('Prevención ART'), ('Galeno ART'), ('Swiss Medical');
 
 INSERT INTO COBERTURA_ART (nombre_entidad_ART, valida_desde, valida_hasta, estado_ART) VALUES 
 ('Federación Patronal', '2025-01-01', '2025-12-31', TRUE);

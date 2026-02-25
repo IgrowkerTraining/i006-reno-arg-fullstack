@@ -3,13 +3,15 @@ const Catalog = require('../models/Catalog');
 class CatalogService {
   
     static async getProjectSetupData() {
-        const [sistemas, planificacion] = await Promise.all([
+        const [systems, planningStructure, artsCoverage] = await Promise.all([
             Catalog.getSystems(),
-            Catalog.getPlanningStructure()
+            Catalog.getPlanningStructure(),
+            Catalog.getArts()
         ]);
         return {
-            sistemas,
-            planificacion
+            systems,
+            planningStructure,
+            artsCoverage
         };
     }
     static async getReportSetupData() {

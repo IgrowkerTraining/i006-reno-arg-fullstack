@@ -4,7 +4,7 @@ class Catalog {
 
   static async getSystems() {
     const sql = `
-      SELECT id_sistema AS id, nombre 
+      SELECT id_sistema AS id_system, nombre AS name
       FROM SISTEMA_CONSTRUCTIVO 
       ORDER BY id_sistema ASC;
     `;
@@ -28,8 +28,8 @@ class Catalog {
   static async getTrades() {
   const sql = `
     SELECT 
-      id_oficio, 
-      nombre 
+      id_oficio as id_trade, 
+      nombre as name
     FROM OFICIO;
   `;
   return await db.any(sql);
@@ -37,10 +37,15 @@ class Catalog {
 static async getSafetyMeasures() {
   const sql = `
     SELECT 
-      id_medidas_seg AS id, 
+      id_medidas_seg AS id_safety_measure, 
       descripcion AS name
     FROM MEDIDAS_SEGURIDAD;
   `;
+  return await db.any(sql);
+}
+
+static async getArts(){
+  const sql = ` Select id_cat_art as id_art, nombre_entidad_art as name from CAT_ART;`;
   return await db.any(sql);
 }
 

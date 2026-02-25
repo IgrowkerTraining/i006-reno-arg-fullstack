@@ -25,10 +25,16 @@ CREATE TABLE MEDIDAS_SEGURIDAD (
     id_medidas_seg SERIAL PRIMARY KEY,
     descripcion VARCHAR(255) NOT NULL
 );
+CREATE TABLE CAT_ART (
+    id_cat_art SERIAL PRIMARY KEY,
+    nombre_entidad_ART VARCHAR(100) UNIQUE NOT NULL
+);
 
 CREATE TABLE COBERTURA_ART (
-    id_ART SERIAL PRIMARY KEY,
-    nombre_entidad_ART VARCHAR(100) NOT NULL,
+    id_art SERIAL PRIMARY KEY,
+    id_cat_art INTEGER REFERENCES CAT_ART(id_cat_art),
+    id_proyecto INTEGER REFERENCES PROYECTO(id_proyecto),
+    nro_poliza VARCHAR(50), 
     valida_desde DATE,
     valida_hasta DATE,
     estado_ART BOOLEAN DEFAULT TRUE
@@ -57,7 +63,7 @@ CREATE TABLE PROYECTO (
     matricula_responsable VARCHAR(50), 
     FOREIGN KEY (id_responsable) REFERENCES USUARIO(id_usuario),
     FOREIGN KEY (id_sistema_constructivo) REFERENCES SISTEMA_CONSTRUCTIVO(id_sistema),
-    FOREIGN KEY (id_ART) REFERENCES COBERTURA_ART(id_ART)
+    FOREIGN KEY (id_ART) REFERENCES COBERTURA_ART(id_art)
 );
 
 CREATE TABLE ETAPA (
@@ -100,13 +106,13 @@ CREATE TABLE TAREA (
 
 CREATE TABLE REGISTRO_AVANCE (
     id_registro_avance SERIAL PRIMARY KEY,
-    id_etapa INTEGER NOT NULL,
     id_supervisor INTEGER NOT NULL,
+    id_proyecto INTEGER NOT NULL,
     fecha DATE DEFAULT CURRENT_DATE,
-    avance_porcentaje DECIMAL(5,2),
+    avance_porcentaje DECIMAL(5,2) DEFAULT 0,
     comentario TEXT,                
-    FOREIGN KEY (id_etapa) REFERENCES ETAPA(id_etapa),
-    FOREIGN KEY (id_supervisor) REFERENCES USUARIO(id_usuario)
+    FOREIGN KEY (id_supervisor) REFERENCES USUARIO(id_usuario),
+    FOREIGN KEY (id_proyecto) REFERENCES PROYECTO(id_proyecto)
 );
 
 CREATE TABLE DETALLE_AVANCE_TAREA (
@@ -120,26 +126,16 @@ CREATE TABLE DETALLE_AVANCE_TAREA (
     FOREIGN KEY (id_estado_tarea) REFERENCES ESTADO(id_estado)
 );
 
-CREATE TABLE REGISTRO_SEGURIDAD (
-    id_reg_seguridad SERIAL PRIMARY KEY,
-    id_registro_avance INTEGER NOT NULL,
-    etapa_seguridad INTEGER NOT NULL, 
-    id_art INTEGER,
-    cumple BOOLEAN DEFAULT FALSE,   
-    FOREIGN KEY (id_registro_avance) REFERENCES REGISTRO_AVANCE(id_registro_avance),
-    FOREIGN KEY (etapa_seguridad) REFERENCES etapa_seguridad(id_etapa_seg),
-    FOREIGN KEY (id_art) REFERENCES COBERTURA_ART(id_ART)
-);
-
 CREATE TABLE VALIDACION_TECNICA (
     id_validacion SERIAL PRIMARY KEY,
     id_registro_avance INTEGER NOT NULL UNIQUE,
-    id_responsable_tecnico INTEGER NOT NULL,
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    id_responsable_tecnico INTEGER,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_validacion TIMESTAMP, 
     estado VARCHAR(20) CHECK (estado IN ('APROBADO', 'RECHAZADO', 'PENDIENTE')) DEFAULT 'PENDIENTE',
     comentario TEXT,
-    FOREIGN KEY (id_registro_avance) REFERENCES REGISTRO_AVANCE(id_registro_avance),
-    FOREIGN KEY (id_responsable_tecnico) REFERENCES USUARIO(id_usuario)
+    CONSTRAINT fk_registro_avance FOREIGN KEY (id_registro_avance) REFERENCES REGISTRO_AVANCE(id_registro_avance),
+    CONSTRAINT fk_responsable_tecnico FOREIGN KEY (id_responsable_tecnico) REFERENCES USUARIO(id_usuario)
 );
 CREATE TABLE REGISTRO_SEGURIDAD (
     id_reg_seguridad SERIAL PRIMARY KEY,

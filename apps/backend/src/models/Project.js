@@ -17,29 +17,29 @@ class Project {
   }
   toJSON() {
     const json = {
-        id: this.id,
-        code: this.code,
-        name: this.name,
-        location: this.location,
-        surfaceM2: parseFloat(this.surfaceM2),
-        registrationDate: this.registrationDate,
-        manager: {
-            id: this.managerId,
-            name: this.managerName,
-            license: this.managerLicense
-        },
-        config: {
-            constructionSystemId: this.constructionSystemId,
-            artCoverageId: this.artCoverageId
-        }
+      id: this.id,
+      code: this.code,
+      name: this.name,
+      location: this.location,
+      surfaceM2: parseFloat(this.surfaceM2),
+      registrationDate: this.registrationDate,
+      manager: {
+        id: this.managerId,
+        name: this.managerName,
+        license: this.managerLicense
+      },
+      config: {
+        constructionSystemId: this.constructionSystemId,
+        artCoverageId: this.artCoverageId
+      }
     };
 
     if (this.stages && this.stages.length > 0) {
-        json.stages = this.stages;
+      json.stages = this.stages;
     }
 
     return json;
-}
+  }
   static async getAll() {
     const sql = `
       SELECT p.*, u.nombre as responsable_nombre 
@@ -116,9 +116,54 @@ class Project {
       WHERE p.id_responsable = $1;
     `;
     const rows = await db.any(sql, [userId]);
-    
+
     return rows.map(row => new Project(row));
-}
+  }
+
+  static async getDataProjectReport(projectId, month, year) {
+    return await db.any(`
+        SELECT 
+            TO_CHAR(r.fecha, 'YYYY-MM-DD') AS report_date,
+            r.avance_porcentaje AS progress,
+            r.comentario AS supervisor_notes,
+            (SELECT string_agg(t.nombre, ', ') 
+             FROM DETALLE_AVANCE_TAREA det 
+             JOIN tipo_tarea t ON det.id_tarea = t.id_tipo_tarea 
+             WHERE det.id_registro_avance = r.id_registro_avance) AS tasks,
+            (SELECT string_agg(o.nombre, ', ') 
+             FROM REGISTRO_OFICIO reg 
+             JOIN OFICIO o ON reg.id_oficio = o.id_oficio 
+             WHERE reg.id_registro_avance = r.id_registro_avance) AS trades,
+            (SELECT string_agg(m.descripcion || ': ' || (CASE WHEN rs.cumple THEN 'Cumple' ELSE 'No Cumple' END), ' | ') 
+             FROM REGISTRO_SEGURIDAD rs 
+             JOIN MEDIDAS_SEGURIDAD m ON rs.id_medida_seg = m.id_medidas_seg 
+             WHERE rs.id_registro_avance = r.id_registro_avance) AS safety_status
+        FROM REGISTRO_AVANCE r
+        WHERE r.id_proyecto = $1 
+          AND EXTRACT(MONTH FROM r.fecha) = $2
+          AND EXTRACT(YEAR FROM r.fecha) = $3
+        ORDER BY r.fecha ASC
+    `, [projectId, month, year]);
+  }
+
+  static async getProjectHeader(projectId) {
+    return await db.oneOrNone(`
+        SELECT 
+            p.id_proyecto, 
+            p.nombre AS proyecto_nombre, 
+            TO_CHAR(p.fecha_registro, 'YYYY-MM-DD') AS fecha_registro,
+            c.nombre_entidad_art AS nombre_art, 
+            u.nombre AS creador_nombre,
+            r.nombre AS creador_rol_nombre,
+            u.id_rol AS creador_rol_id
+        FROM PROYECTO p
+        JOIN USUARIO u ON p.id_responsable = u.id_usuario
+        LEFT JOIN COBERTURA_ART c ON p.id_art = c.id_art
+        LEFT JOIN ROL r ON u.id_rol = r.id_rol
+        WHERE p.id_proyecto = $1
+    `, [projectId]);
+  }
+
 }
 
 module.exports = Project;
