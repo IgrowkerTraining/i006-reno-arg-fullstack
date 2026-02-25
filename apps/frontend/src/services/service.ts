@@ -14,7 +14,7 @@ export const getSecurityTip = async (): Promise<string> => {
 export const getAIGreeting = async (name: string): Promise<string> => {
   // Mock AI greetings - in production, this would call an actual AI service ----------- TODO
   const greetings = [
-    `Bienvenido/a ${name}. Tu panel de gestión de obras está listo.`,
+    `Bienvenid@ ${name}. Tu panel de gestión de obras está listo.`,
     `Hola ${name}. Revisemos el avance y cumplimiento de tus proyectos.`,
     `${name}, accedé al seguimiento técnico de tus obras.`,
     `Bienvenido/a ${name}. Tenés el control de planificación y normativa en un solo lugar.`,

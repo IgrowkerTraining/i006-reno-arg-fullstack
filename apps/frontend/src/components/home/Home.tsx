@@ -1,61 +1,94 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { Search } from "../common/Search";
 import { Button } from "../common/Button";
-import { CardObra } from "../common/CardObra";
-import { useAuthApi } from "../../hooks/useAuthApi";
+import CardData from "./CardData";
+import { ChartNoAxesCombined, ClockAlert, ListChecks, MapPin, ShieldCheck } from "lucide-react";
+import { getAIGreeting } from "@/src/services/service";
+import { api } from "@/src/services/api";
+import { Card } from "../common/Card";
+
+const DATA = [
+  { icon: ChartNoAxesCombined, title: "Obras activas", data: "4", color: "secondary" },
+  { icon: ShieldCheck, title: "ART-vigente", data: "100%", color: "primary" },
+  { icon: ClockAlert, title: "Tareas pendientes", data: "12", color: "accent" },
+  { icon: ListChecks, title: "Obras validadas", data: "3", color: "secondary" },
+];
+
+const DATAHistorialMarzo = [
+  { title: "Ampliación planta alta - Local gastronómico", location: "San Isidro, CABA", percent: "100%", date: "15/03/2024" }
+
+];
+const DATAHistorialFebrero = [
+  { title: "Reforma vivienda unifamiliar", location: "Barrio Caballito, CABA", percent: "75%", date: "10/02/2024" },
+  { title: "Local comercial - Gastronomía", location: "Palermo Soho, CABA", percent: "50%", date: "28/01/2024" },
+];
+
 
 const Home: React.FC = () => {
   const { user, logout } = useAuth();
-  const { getProjects } = useAuthApi();
-  const [projects, setProjects] = React.useState<any[]>([]);
+  const [greeting, setGreeting] = useState<string>("Loading greeting...");
 
   useEffect(() => {
-    const fetchObras = async () => {
-      try {
-        const data = await getProjects();
-        setProjects(data);
-      } catch (error) {
-        console.error("Error al cargar proyectos:", error);
-      }
+    const initDashboard = async () => {
+      const [msg] = await Promise.all([
+        getAIGreeting(user?.name || ""),
+        api.checkHealth(),
+      ]);
+      setGreeting(msg);
     };
-    fetchObras();
-  }, [getProjects]);
+    initDashboard();
+  }, [user?.name]);
 
   return (
     <>
-      <h2 className="text-3xl font-bold mb-4">Dashboard RenoArg</h2>
-
-      {user && (
-        <p className="text-2xl mb-6">Bienvenid@ {user.name}</p>
-      )}
-
-      <Button
-        variant="secondary"
-        className="mb-8"
-        onClick={logout}
-      >
-        Cerrar sesión
-      </Button>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {projects && projects.length > 0 ? (
-          projects.map((obra) => (
-            <div key={obra.id}>
-              <CardObra
-                codigo={obra.code}
-                titulo={obra.name}
-                ubicacion={obra.location}
-                artStatus="ok"
-                seguridadStatus="ok"
-                progreso={45}
-                responsable={obra.manager?.name || "Sin responsable asignado"}
-                onDetalle={() => console.log("detalle", obra.id)}
-              />
-            </div>
-          ))
-        ) : (
-          <p className="col-span-2 text-slate-500">No se encontraron obras vinculadas a tu cuenta.</p>
-        )}
+      <div className="grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
+        <Search placeholder="Buscar obra..." className="mb-4 lg:col-span-3" />
+        <Button variant="secondary" onClick={() => console.log("Nuevo proyecto")} className="mb-4 lg:col-span-1">+ Nueva obra</Button>
       </div>
+      <h1 className="text-2xl font-bold mt-5">{greeting}</h1>
+      <section className="mt-8 grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
+        {DATA.map((item) => (
+          <CardData key={item.title} icon={item.icon} title={item.title} data={item.data} color={item.color} />
+        ))}
+      </section>
+      <Card className="mt-8 p-6 border-neutro-3">
+        <h2 className="text-2xl font-semibold mb-4 text-primary">Historial de registros diarios</h2>
+        <hr className="border-neutro-2" />
+        <p className="text-lg text-primary font-bold mt-6">Marzo</p>
+        <ul className="space-y-3 mt-4">
+          {DATAHistorialMarzo.map((item, index) => (
+            <li key={index} className="grid grid-cols-4 items-center gap-5">
+              <div className="col-span-3 gap-3 flex items-center">
+                <MapPin className="text-primary" />
+                <div><p className="text-md font-medium">{item.title}</p>
+                  <p className="text-sm text-slate-500">{item.location}</p></div>
+              </div>
+              <div className="col-span-1">
+                <p className="text-md font-bold text-primary">{item.percent}</p>
+                <p className="text-sm text-slate-500">{item.date}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <p className="text-lg text-primary font-bold mt-6">Febrero</p>
+        <ul className="space-y-3 mt-4">
+          {DATAHistorialFebrero.map((item, index) => (
+            <li key={index} className="grid grid-cols-4 items-center gap-5">
+              <div className="col-span-3 gap-3 flex items-center">
+                <MapPin className="text-primary" />
+                <div><p className="text-md font-medium">{item.title}</p>
+                  <p className="text-sm text-slate-500">{item.location}</p></div>
+              </div>
+              <div className="col-span-1">
+                <p className="text-md font-bold text-primary">{item.percent}</p>
+                <p className="text-sm text-slate-500">{item.date}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
     </>
   );
 }
