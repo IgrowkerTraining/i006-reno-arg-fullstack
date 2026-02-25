@@ -25,20 +25,17 @@ class Report {
         return new Report(result);
     }
 
-    static async saveFullReport(reportData) {
-        return await db.tx(async t => {
-            const reportHeader = await this.create(reportData, t);
+   static async saveFullReport(reportData, t) {
+    const reportHeader = await this.create(reportData, t);
 
-            await Promise.all([
-                this._insertTasks(t, reportHeader.id, reportData.selectedTasks),
-                this._insertTrades(t, reportHeader.id, reportData.selectedTrades),
-                this._insertSafety(t, reportHeader.id, reportData.safetyItems),
-                this._createInitialValidation(t, reportHeader.id)
-            ]);
+    await Promise.all([
+        this._insertTasks(t, reportHeader.id, reportData.selectedTasks),
+        this._insertTrades(t, reportHeader.id, reportData.selectedTrades),
+        this._insertSafety(t, reportHeader.id, reportData.safetyItems)
+    ]);
 
-            return reportHeader;
-        });
-    }
+    return reportHeader;
+}
 
     static async getTasksForReport(idProject) {
         const sql = `
@@ -100,13 +97,6 @@ class Report {
             t.none('INSERT INTO REGISTRO_SEGURIDAD (id_registro_avance, id_medida_seg, cumple) VALUES ($1, $2, $3)', [idReport, item.id, item.status])
         );
         return t.batch(queries);
-    }
-    static async _createInitialValidation(t, idReport) {
-        return t.none(`
-        INSERT INTO VALIDACION_TECNICA (id_registro_avance, estado)
-        VALUES ($1, 'PENDIENTE')`,
-            [idReport]
-        );
     }
 
     static async getAllReports() {
@@ -181,6 +171,11 @@ class Report {
         JOIN MEDIDAS_SEGURIDAD m ON reg.id_medida_seg = m.id_medidas_seg 
         WHERE reg.id_registro_avance = $1`, [id]);
     }
+
+    static async countAll() {
+    const res = await db.one('SELECT COUNT(*) FROM registro_avance');
+    return parseInt(res.count);
+}
 }
 
 module.exports = Report;

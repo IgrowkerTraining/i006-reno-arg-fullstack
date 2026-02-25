@@ -31,13 +31,15 @@ class AnalysisIAService {
             },
             reports: rawData
         };
-        const resultIA = await this.callExternalAI(projectId, month, year, rawData);
+        /*
+        const resultIA = await this.callExternalAI(projectId, month, year, rawData); comentado hasta que se obtena URL API IA
 
         const savedAnalysis = await AnalysisIA.save(projectId, resultIA);
 
         return savedAnalysis;
+        */
 
-        //return finalPayload;
+        return finalPayload; // Retorno el payload que se enviaría a la IA para pruebas
     }
     static async callExternalAI(projectId, month, year, reports) {
         const AI_URL = '....';

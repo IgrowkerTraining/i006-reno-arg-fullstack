@@ -9,6 +9,7 @@ const stageRoutes = require('./stage.routes');
 const taskRoutes = require('./task.routes');
 const reportRoutes = require('./report.routes');
 const analysisIaRoutes = require('./analysisIa.routes');
+const dashboardRoutes = require('./dashboardSummary.routes');
 const router = express.Router();
 
 router.use('/auth', authRoutes);
@@ -20,4 +21,5 @@ router.use('/stages', stageRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/reports', reportRoutes);
 router.use('/analysis-ia', analysisIaRoutes);
+router.use('/dashboard', dashboardRoutes);
 module.exports = router;

@@ -149,20 +149,26 @@ class Project {
   static async getProjectHeader(projectId) {
     return await db.oneOrNone(`
         SELECT 
-            p.id_proyecto, 
-            p.nombre AS proyecto_nombre, 
-            TO_CHAR(p.fecha_registro, 'YYYY-MM-DD') AS fecha_registro,
-            c.nombre_entidad_art AS nombre_art, 
-            u.nombre AS creador_nombre,
-            r.nombre AS creador_rol_nombre,
-            u.id_rol AS creador_rol_id
-        FROM PROYECTO p
-        JOIN USUARIO u ON p.id_responsable = u.id_usuario
-        LEFT JOIN COBERTURA_ART c ON p.id_art = c.id_art
-        LEFT JOIN ROL r ON u.id_rol = r.id_rol
-        WHERE p.id_proyecto = $1
+    p.id_proyecto, 
+    p.nombre AS proyecto_nombre, 
+    TO_CHAR(p.fecha_registro, 'YYYY-MM-DD') AS fecha_registro,
+    ca.nombre_entidad_art AS nombre_art, -- Ahora viene de 'ca' (CAT_ART)
+    u.nombre AS creador_nombre,
+    r.nombre AS creador_rol_nombre,
+    u.id_rol AS creador_rol_id
+FROM PROYECTO p
+JOIN USUARIO u ON p.id_responsable = u.id_usuario
+LEFT JOIN COBERTURA_ART c ON p.id_art = c.id_art
+LEFT JOIN CAT_ART ca ON c.id_cat_art = ca.id_cat_art -- El nuevo JOIN necesario
+LEFT JOIN ROL r ON u.id_rol = r.id_rol
+WHERE p.id_proyecto = $1
     `, [projectId]);
   }
+
+  static async countAll() {
+    const res = await db.one('SELECT COUNT(*) FROM PROYECTO');
+    return parseInt(res.count);
+}
 
 }
 
