@@ -33,7 +33,7 @@ export const CardObra = ({
 }: CardObraProps) => {
 
   return (
-    <Card className="flex flex-col gap-6 w-[400px] h-[550px] flex-shrink-0 p-6">
+    <Card className="flex flex-col gap-6 w-[400px] h-[550px] flex-shrink-0 p-6 rounded-lg border-neutro-2">
 
       <div className="flex items-center justify-between">
         <span className="inline-block bg-yellow-200 text-sm px-4 py-2 rounded-full font-medium w-fit text-center">

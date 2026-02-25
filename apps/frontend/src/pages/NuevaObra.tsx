@@ -157,7 +157,7 @@ const NuevaObra: React.FC = () => {
   const selectedTasksCount = useMemo(
     () =>
       Object.values(selectedTasks).reduce(
-        (accumulator, list) => accumulator + list.length,
+    (accumulator, list) => accumulator + list.length,
         0,
       ),
     [selectedTasks],
@@ -585,9 +585,9 @@ const NuevaObra: React.FC = () => {
         : "Siguiente";
 
   return (
-    <div className="mx-auto w-full max-w-4xl pb-6">
-      <Card className="overflow-hidden rounded-3xl border-slate-200 bg-[#F5F5F7] p-0">
-        <header className="bg-secondary-plus px-8 py-5 text-white">
+    <div className="mx-auto w-full max-w-4xl pb-10">
+      <Card className="overflow-hidden rounded-[38px] border-neutro-3">
+        <header className="bg-secondary-plus px-10 py-6 text-white">
           <h1 className="text-2xl font-bold uppercase">Alta de nueva obra</h1>
           <p className="mt-1 text-sm text-white/90">
             {step === 0
@@ -602,7 +602,7 @@ const NuevaObra: React.FC = () => {
           {renderStepContent()}
 
           <footer className="flex items-center justify-between">
-            <Button type="button" variant="outline" onClick={handleBack}>
+            <Button type="button" variant="ghost" onClick={handleBack}>
               <ChevronLeft size={16} className="mr-1" />
               Atras
             </Button>
