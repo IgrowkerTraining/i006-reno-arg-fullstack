@@ -10,6 +10,7 @@ const taskRoutes = require('./task.routes');
 const reportRoutes = require('./report.routes');
 const analysisIaRoutes = require('./analysisIa.routes');
 const dashboardRoutes = require('./dashboardSummary.routes');
+const validationRoutes = require('./validation.routes');
 const router = express.Router();
 
 router.use('/auth', authRoutes);
@@ -22,4 +23,5 @@ router.use('/tasks', taskRoutes);
 router.use('/reports', reportRoutes);
 router.use('/analysis-ia', analysisIaRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/validations', validationRoutes);
 module.exports = router;

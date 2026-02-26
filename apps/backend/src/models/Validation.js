@@ -17,6 +17,10 @@ static async create(t, idReport) {
         [idReport]
     );
 }
+static async getAllValidations() {
+    const res = await db.manyOrNone('SELECT * FROM VALIDACION_TECNICA');
+    return res.map(row => new Validation(row));
+}
 static async countByStatus(status) {
     const res = await db.one(
         'SELECT COUNT(*) FROM VALIDACION_TECNICA WHERE estado = $1',
