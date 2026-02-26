@@ -2,7 +2,7 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import PlaceholderActionLink from "../components/common/PlaceholderActionLink";
 import PlaceholderScreen from "../components/common/PlaceholderScreen";
-import { ROUTES, ROUTE_BUILDERS } from "../constants/routes";
+import { ROUTE_BUILDERS } from "../constants/routes";
 
 const ObraDetalle: React.FC = () => {
   const { obraId } = useParams<{ obraId: string }>();
@@ -16,7 +16,7 @@ const ObraDetalle: React.FC = () => {
             label="Registro diario"
           />
           <PlaceholderActionLink
-            to={ROUTES.MIS_OBRAS}
+            to={"/dashboard/mis-obras"}
             label="Volver a Mis obras"
             variant="secondary"
           />
