@@ -1,4 +1,5 @@
-import { LayoutDashboard, ClipboardList, Flower, PanelLeftOpen, PanelLeftClose } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { LayoutDashboard, ClipboardList, Flower, PanelLeftOpen, PanelLeftClose, LogOut } from "lucide-react";
 import SidebarItem from "./SidebarItem";
 import { useAuth } from "@/src/hooks/useAuth";
 import { Link } from "react-router-dom";
@@ -12,8 +13,24 @@ interface Props {
 
 export default function Sidebar({ collapsed, setCollapsed, isMobile }: Props) {
 
-    const { user } = useAuth();
-    
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement | null>(null);
+
+    const { user, logout } = useAuth();
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("pointerdown", handleClickOutside);
+        return () => {
+            document.removeEventListener("pointerdown", handleClickOutside);
+        };
+    }, []);
+
     return (
         <aside
             className={`bg-primary text-white transition-all duration-300 ${collapsed ? "w-15" : "w-1/6 max-w-65"
@@ -67,8 +84,9 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile }: Props) {
                     />}
             </nav>
             {/* Footer con info del usuario */}
-            <footer className={`mt-auto ${collapsed ? "px-2 py-4" : "p-4"} bg-secondary text-center text-xs text-gray-300 rounded-b-[36px]`}>
-                <Link to="/dashboard/profile" className={`flex flex-row items-center gap-4  mb-2 ${collapsed ? "justify-center" : "justify-start"}`}>
+            <footer ref={menuRef} className={`mt-auto ${collapsed ? "px-2 py-4" : "p-4"} bg-secondary text-center text-xs text-gray-300 rounded-b-[36px] relative`}
+            >
+                <div onClick={() => setIsMenuOpen((prev) => !prev)} className={`flex flex-row items-center gap-4  mb-2 ${collapsed ? "justify-center" : "justify-start"}` + " cursor-pointer"}>
                     <span className="w-10 h-10 bg-accent rounded-full flex items-center justify-center text-primary text-sm font-bold">
                         {user?.name && user.lastName ? `${user.name.charAt(0)}${user.lastName.charAt(0)}` : "U"}
                     </span>
@@ -80,8 +98,20 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile }: Props) {
                             <p className="text-primary text-xs">{user?.idRol === 1 ? 'Arquitecto' : 'Supervisor'}</p>
                         </div>
                     )}
-                </Link>
+                </div>
+                {isMenuOpen && (
+                    <div
+                        className={`absolute bottom-full mb-3 ${collapsed ? "left-10" : "left-15 translate-y-0 min-w-[180px]"} bg-white rounded-md shadow-xl py-2 px-3 z-50`}
+                    >
+                        <button
+                            onClick={logout}
+                            className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10 text-primary transition" >
+                            <LogOut size={18}  />
+                            {!collapsed && <span>Cerrar sesión</span>}
+                        </button>
+                    </div>
+                )}
             </footer>
-        </aside>
+        </aside >
     );
 }
