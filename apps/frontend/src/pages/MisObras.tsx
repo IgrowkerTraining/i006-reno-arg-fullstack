@@ -48,7 +48,9 @@ const MisObras: React.FC = () => {
               progreso={45}
               responsable={obra.manager?.name || "Sin responsable asignado"}
               matricula={obra.manager?.license || "Sin matrícula"}
-              onDetalle={() => console.log("detalle", obra.id)}
+              onDetalle={() => navigate(`/dashboard/mis-obras/${obra.id}`)}
+              onRegistro={() => navigate(`/dashboard/mis-obras/${obra.id}/registro`)}
+              user={user}
             />
 
           ))

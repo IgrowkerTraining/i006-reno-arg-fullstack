@@ -4,6 +4,7 @@ import { StatusBadge } from "./StatusBadge";
 import { Button } from "./Button";
 import { Calendar, HardHat, MapPin, User } from "lucide-react";
 import { formatDate } from "@/src/utils/formateDate";
+import { User as UserType } from "@/src/types";
 
 interface CardObraProps {
   key: string;
@@ -17,6 +18,8 @@ interface CardObraProps {
   responsable: string;
   matricula: string;
   onDetalle: () => void;
+  onRegistro: () => void;
+  user: UserType;
 }
 
 export const CardObra = ({
@@ -30,17 +33,19 @@ export const CardObra = ({
   responsable,
   matricula,
   onDetalle,
+  onRegistro,
+  user
 }: CardObraProps) => {
 
   return (
-    <Card className="flex flex-col gap-6 w-[400px] h-[550px] flex-shrink-0 p-6 rounded-lg border-neutro-2">
+    <Card className="flex flex-col gap-6 w-[480px] h-[550px] flex-shrink-0 p-6 rounded-lg border-neutro-2">
 
       <div className="flex items-center justify-between">
         <span className="inline-block bg-yellow-200 text-sm px-4 py-2 rounded-full font-medium w-fit text-center">
           {codigo}
         </span>
-        <HardHat className="text-primary w-10 h-10 bg-accent/50 rounded-full p-1.5" />
-      </div>
+          <HardHat className="text-primary w-10 h-10 bg-accent/50 rounded-full p-1.5" />
+          </div>
 
       <h3 className="text-3xl font-semibold" >{titulo}</h3>
       <p className="text-md flex items-center"><MapPin className="inline mr-2 size-5" />{ubicacion}</p>
@@ -69,10 +74,16 @@ export const CardObra = ({
             <span className="text-sm">Arq. {responsable}</span>
             <span className="text-xs">{matricula}</span>
           </div>
-        </div>
-        <Button variant="ghost" className="text-sm" onClick={onDetalle}>
-          VER DETALLE →
-        </Button>
+        </div>       
+          <Button variant="outline" className="text-sm" onClick={onDetalle}>
+            Ver detalle →
+          </Button>
+            {user.idRol === 2  && ( 
+          <Button variant="accent" className="text-sm" onClick={onRegistro}>
+            Reportar registro
+          </Button>
+         )
+          }
       </div>
     </Card>
   );
