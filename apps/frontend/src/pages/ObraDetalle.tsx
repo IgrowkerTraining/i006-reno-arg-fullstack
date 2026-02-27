@@ -11,6 +11,7 @@ import { Button } from "../components/common/Button";
 const ObraDetalle: React.FC = () => {
   const { obraId } = useParams<string>();
   const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
@@ -18,19 +19,25 @@ const ObraDetalle: React.FC = () => {
 
     const loadProject = async () => {
       try {
+        setLoading(true);
         const project = await api.getProjectById(obraId);
         setProject(project);
-
       } catch {
         setProject(null);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadProject();
-
   }, [obraId]);
 
-  console.log({ project });
+  if (loading) {
+    return <div className="flex items-center justify-center h-[650px]">
+      <p className="text-xl font-medium text-primary">Cargando detalle de obra...</p>
+    </div>
+  }
+
   return (
     <>
       {project ? (
