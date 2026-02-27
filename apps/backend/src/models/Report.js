@@ -94,7 +94,7 @@ class Report {
     static async _insertSafety(t, idReport, safetyItems) {
         if (!safetyItems || safetyItems.length === 0) return;
         const queries = safetyItems.map(item =>
-            t.none('INSERT INTO REGISTRO_SEGURIDAD (id_registro_avance, id_medida_seg, cumple) VALUES ($1, $2, $3)', [idReport, item.id, item.status])
+            t.none('INSERT INTO REGISTRO_SEGURIDAD (id_registro_avance, id_medida_seg, cumple) VALUES ($1, $2, $3)', [idReport, item.id_medida_seg, item.cumple])
         );
         return t.batch(queries);
     }

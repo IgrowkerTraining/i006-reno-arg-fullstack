@@ -18,5 +18,24 @@ class ValidationController {
             return next(error);
         }
     }
+    static async updateValidation(req, res, next) {
+    try {
+        const { id } = req.params;
+        const { status, observations } = req.body;
+        const idResponsible = req.user.id; 
+        
+        const updated = await ValidationService.updateValidation(id, status, observations, idResponsible);
+        
+        if (!updated) {
+            const error = new Error('Validation not found or update failed');
+            error.status = 404;
+            throw error;
+        }
+        
+        res.status(200).json(updated);
+    } catch (error) {
+        return next(error);
+    }
+}
 }
 module.exports = ValidationController;

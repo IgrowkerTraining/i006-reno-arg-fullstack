@@ -1,4 +1,5 @@
-const { db } = require('../config');
+
+const db = require('../config/db');
 const Report = require('../models/Report');
 const Validation = require('../models/Validation');
 const CatalogService = require('./catalogService');

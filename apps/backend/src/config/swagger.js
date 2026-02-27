@@ -268,10 +268,51 @@ const options = {
                             items: {
                                 type: 'object',
                                 properties: {
-                                    id_safety: { type: 'integer', example: 5 },
-                                    status: { type: 'boolean', example: true },
+                                    id_medida_seg: { type: 'integer', example: 1 }, // Antes id_safety
+                                    cumple: { type: 'boolean', example: true }, // Antes status
+                                    observacion: { type: 'string', example: '' }, // Agregamos esto por si lo usas
                                 },
                             },
+                        },
+                    },
+                },
+                Validation: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        reportId: {
+                            type: 'integer',
+                            description: 'ID del reporte asociado',
+                            example: 10
+                        },
+                        status: {
+                            type: 'string',
+                            enum: ['PENDIENTE', 'APROBADO', 'RECHAZADO'],
+                            example: 'PENDIENTE'
+                        },
+                        observations: {
+                            type: 'string',
+                            example: 'Pendiente de revisión por el ingeniero de obra.'
+                        },
+                        updatedAt: {
+                            type: 'string',
+                            format: 'date-time',
+                            example: '2026-02-27T10:00:00Z'
+                        },
+                    },
+                },
+                ValidationUpdateInput: {
+                    type: 'object',
+                    required: ['status'],
+                    properties: {
+                        status: {
+                            type: 'string',
+                            enum: ['APROBADO', 'RECHAZADO'],
+                            example: 'APROBADO',
+                        },
+                        observations: {
+                            type: 'string',
+                            example: 'Revisión técnica satisfactoria.',
                         },
                     },
                 },
