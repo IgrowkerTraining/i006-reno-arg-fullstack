@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
@@ -20,6 +20,8 @@ import { Card } from "../components/common/Card";
 import { Input } from "../components/common/Input";
 import { Stepper } from "../components/common/Stepper";
 import { ROUTES } from "../constants/routes";
+import { api, CreateProjectPayload } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 
 type SistemaConstructivo = "tradicional" | "seco" | "mixto";
 type StepThreeView = "seleccion" | "planificacion" | "art";
@@ -39,6 +41,23 @@ interface PlanningGroup {
   id: string;
   title: string;
   tasks: string[];
+}
+
+interface PlanningCatalogTask {
+  id: number;
+  name: string;
+}
+
+interface PlanningCatalogStage {
+  id: number;
+  name: string;
+  tasks: PlanningCatalogTask[];
+}
+
+interface PlanningCatalogResponse {
+  systems: Array<{ id_system: number; name: string }>;
+  planningStructure: PlanningCatalogStage[];
+  artsCoverage: Array<{ id_art: number; name: string }>;
 }
 
 const STEPS = ["General", "Responsable", "Sistema y planificacion"];
@@ -107,11 +126,42 @@ const PLANNING_GROUPS: PlanningGroup[] = [
 ];
 
 const ART_PROVIDERS = [
-  "Provincia ART",
-  "La Segunda ART",
-  "Prevencion ART",
-  "Swiss Medical ART",
+  { id: "1", name: "Provincia ART" },
+  { id: "2", name: "La Segunda ART" },
+  { id: "3", name: "Prevencion ART" },
+  { id: "4", name: "Swiss Medical ART" },
 ];
+
+const FALLBACK_SYSTEM_IDS: Record<SistemaConstructivo, number> = {
+  tradicional: 1,
+  seco: 2,
+  mixto: 3,
+};
+
+const FALLBACK_TASK_IDS: Record<string, { stageId: number; taskId: number }> = {
+  "picado de pared": { stageId: 1, taskId: 1 },
+  "retiro de aberturas": { stageId: 1, taskId: 2 },
+  "levantamiento de pisos": { stageId: 1, taskId: 3 },
+  "levantamiento de tabique": { stageId: 2, taskId: 4 },
+  contrapiso: { stageId: 2, taskId: 5 },
+  carpeta: { stageId: 2, taskId: 6 },
+  "revoque fino": { stageId: 4, taskId: 12 },
+  "canalizacion electrica": { stageId: 3, taskId: 8 },
+  "instalacion sanitaria": { stageId: 3, taskId: 9 },
+  "instalacion de gas": { stageId: 3, taskId: 10 },
+  "pintura interior": { stageId: 5, taskId: 18 },
+  "colocacion de revestimientos": { stageId: 5, taskId: 15 },
+  carpinterias: { stageId: 5, taskId: 17 },
+};
+
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[()]/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 
 const MIS_OBRAS_PATH = `${ROUTES.DASHBOARD}/${ROUTES.MIS_OBRAS}`;
 
@@ -123,8 +173,15 @@ const createInitialTasks = () =>
 
 const NuevaObra: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [stepThreeView, setStepThreeView] = useState<StepThreeView>("seleccion");
+  const [planningCatalog, setPlanningCatalog] =
+    useState<PlanningCatalogResponse | null>(null);
+  const [artProviders, setArtProviders] = useState(ART_PROVIDERS);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [catalogWarning, setCatalogWarning] = useState<string | null>(null);
   const [formData, setFormData] = useState<NuevaObraForm>({
     projectName: "",
     location: "",
@@ -140,6 +197,30 @@ const NuevaObra: React.FC = () => {
   );
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const loadPlanningCatalog = async () => {
+      try {
+        const catalog = await api.getPlanningCatalog();
+        setPlanningCatalog(catalog);
+
+        if (catalog.artsCoverage?.length) {
+          setArtProviders(
+            catalog.artsCoverage.map((item) => ({
+              id: String(item.id_art),
+              name: item.name,
+            })),
+          );
+        }
+      } catch {
+        setCatalogWarning(
+          "No se pudo obtener el catalogo completo. Se usaran opciones locales.",
+        );
+      }
+    };
+
+    loadPlanningCatalog();
+  }, []);
 
   const creationDate = useMemo(() => {
     const now = new Date();
@@ -176,11 +257,130 @@ const NuevaObra: React.FC = () => {
           )
         : stepThreeView === "planificacion"
           ? selectedTasksCount > 0
-          : stepThreeView === "art"
+        : stepThreeView === "art"
             ? Boolean(
                 formData.artProvider.trim() && formData.artCoverageConfirmed,
               )
             : true;
+
+  const getSystemId = () => {
+    const normalizedSelection = normalizeText(formData.systemType);
+
+    const matchFromCatalog = planningCatalog?.systems.find((system) =>
+      normalizeText(system.name).includes(normalizedSelection),
+    );
+
+    return matchFromCatalog?.id_system ?? FALLBACK_SYSTEM_IDS[formData.systemType];
+  };
+
+  const getSelectedTasksByStage = () => {
+    const selectedTaskNames = Object.values(selectedTasks).flat();
+    const groupedByStage = new Map<number, Set<number>>();
+    const catalogStages = planningCatalog?.planningStructure ?? [];
+
+    selectedTaskNames.forEach((taskName) => {
+      const normalizedTask = normalizeText(taskName);
+      let mappedStageId: number | null = null;
+      let mappedTaskId: number | null = null;
+
+      for (const stage of catalogStages) {
+        const stageTask = stage.tasks.find((task) => {
+          const normalizedCatalogTask = normalizeText(task.name);
+          return (
+            normalizedCatalogTask === normalizedTask ||
+            normalizedCatalogTask.includes(normalizedTask) ||
+            normalizedTask.includes(normalizedCatalogTask)
+          );
+        });
+
+        if (stageTask) {
+          mappedStageId = stage.id;
+          mappedTaskId = stageTask.id;
+          break;
+        }
+      }
+
+      if (mappedStageId === null || mappedTaskId === null) {
+        const fallbackMatch = FALLBACK_TASK_IDS[normalizedTask];
+        if (fallbackMatch) {
+          mappedStageId = fallbackMatch.stageId;
+          mappedTaskId = fallbackMatch.taskId;
+        }
+      }
+
+      if (mappedStageId !== null && mappedTaskId !== null) {
+        const stageTasks = groupedByStage.get(mappedStageId) ?? new Set<number>();
+        stageTasks.add(mappedTaskId);
+        groupedByStage.set(mappedStageId, stageTasks);
+      }
+    });
+
+    return groupedByStage;
+  };
+
+  const createProject = async () => {
+    if (!user?.id) {
+      setSubmitError("No se pudo identificar el usuario logueado.");
+      return;
+    }
+
+    const selectedTasksByStage = getSelectedTasksByStage();
+    const startDate = new Date().toISOString().split("T")[0];
+
+    const etapas: CreateProjectPayload["etapas"] = Array.from(
+      selectedTasksByStage.entries(),
+    ).map(([stageId, taskIds]) => ({
+      id_tipo_etapa: stageId,
+      fecha_inicio: startDate,
+      tareas: Array.from(taskIds),
+    }));
+
+    if (!etapas.length) {
+      setSubmitError("Selecciona al menos una tarea para crear la obra.");
+      return;
+    }
+
+    const parsedSurface = Number(
+      formData.surface.replace(",", ".").replace(/[^0-9.]+/g, ""),
+    );
+
+    const payload: CreateProjectPayload = {
+      nombre: formData.projectName.trim(),
+      ubicacion: formData.location.trim(),
+      superficie_m2: Number.isFinite(parsedSurface) ? parsedSurface : 0,
+      id_responsable: Number(user.id),
+      matricula_responsable: formData.licenseNumber.trim(),
+      id_sistema_constructivo: getSystemId(),
+      etapas,
+    };
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const createdProject = await api.createProject(payload);
+      const createdProjectId = createdProject?.id ?? createdProject?.id_proyecto;
+      const selectedArtId = Number(formData.artProvider);
+
+      if (createdProjectId && Number.isFinite(selectedArtId) && selectedArtId > 0) {
+        try {
+          await api.updateProjectArt(createdProjectId, selectedArtId);
+        } catch {
+          setCatalogWarning(
+            "La obra se creo, pero no se pudo actualizar la cobertura ART.",
+          );
+        }
+      }
+
+      navigate(MIS_OBRAS_PATH);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo crear la obra.";
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleInputChange =
     (field: keyof NuevaObraForm) =>
@@ -207,7 +407,7 @@ const NuevaObra: React.FC = () => {
     setStep((previous) => previous - 1);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 2 && stepThreeView === "seleccion") {
       setStepThreeView("planificacion");
       return;
@@ -226,7 +426,7 @@ const NuevaObra: React.FC = () => {
       return;
     }
 
-    navigate(MIS_OBRAS_PATH);
+    await createProject();
   };
 
   const toggleTask = (groupId: string, task: string) => {
@@ -539,9 +739,9 @@ const NuevaObra: React.FC = () => {
               className="w-full rounded-md border border-[#B8D8E3] bg-white px-3 py-2.5 text-sm text-neutro-1 focus:outline-none focus:ring-2 focus:ring-secondary"
             >
               <option value="">Selecciona ART</option>
-              {ART_PROVIDERS.map((provider) => (
-                <option key={provider} value={provider}>
-                  {provider}
+              {artProviders.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.name}
                 </option>
               ))}
             </select>
@@ -601,13 +801,28 @@ const NuevaObra: React.FC = () => {
 
           {renderStepContent()}
 
+          {catalogWarning ? (
+            <p className="text-sm text-amber-700">{catalogWarning}</p>
+          ) : null}
+
+          {submitError ? (
+            <p className="text-sm text-red-600">{submitError}</p>
+          ) : null}
+
           <footer className="flex items-center justify-between">
-            <Button type="button" variant="ghost" onClick={handleBack}>
+            <Button type="button" variant="ghost" onClick={handleBack} disabled={isSubmitting}>
               <ChevronLeft size={16} className="mr-1" />
               Atras
             </Button>
 
-            <Button type="button" onClick={handleNext} disabled={!canContinue}>
+            <Button
+              type="button"
+              onClick={() => {
+                void handleNext();
+              }}
+              disabled={!canContinue || isSubmitting}
+              isLoading={isSubmitting}
+            >
               {nextLabel}
               <ChevronRight size={16} className="ml-1" />
             </Button>

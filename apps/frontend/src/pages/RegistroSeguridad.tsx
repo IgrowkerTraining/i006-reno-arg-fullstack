@@ -1,24 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import RegistroHeader from "../components/registro/RegistroHeader";
 import FooterActions from "../components/registro/FooterActions";
 import { ROUTE_BUILDERS } from "../constants/routes";
+import { api } from "../services/api";
+import { getReportDraft, saveReportDraft } from "../utils/reportDraft";
 
 interface SeguridadItem {
-  id: string;
+  id: number;
   label: string;
   value: boolean | null;
 }
 
-const SEGURIDAD_ITEMS: Omit<SeguridadItem, "value">[] = [
-  { id: "casco", label: "Uso de casco/calzado" },
-  { id: "zona_senalizada", label: "Zona señalizada" },
-  { id: "proteccion_aberturas", label: "Protección de aberturas" },
-  { id: "limpieza", label: "Limpieza del área" },
-];
-
-const ART_ITEMS: Omit<SeguridadItem, "value">[] = [
-  { id: "art_vigentes", label: "ART Vigentes" },
+const FALLBACK_SEGURIDAD: Omit<SeguridadItem, "value">[] = [
+  { id: 1, label: "Uso de casco/calzado" },
+  { id: 2, label: "Uso de arnés de seguridad" },
+  { id: 3, label: "Uso de gafas protectoras" },
+  { id: 4, label: "Delimitación de zona de trabajo" },
 ];
 
 const BooleanToggle = ({
@@ -32,9 +30,9 @@ const BooleanToggle = ({
     <button
       type="button"
       onClick={() => onChange(false)}
-      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+      className={`h-8 w-8 rounded-full border-2 transition-colors ${
         value === false
-          ? "bg-red-500 border-red-500 text-white"
+          ? "border-red-500 bg-red-500 text-white"
           : "border-gray-300 text-gray-400 hover:border-red-400"
       }`}
     >
@@ -43,9 +41,9 @@ const BooleanToggle = ({
     <button
       type="button"
       onClick={() => onChange(true)}
-      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+      className={`h-8 w-8 rounded-full border-2 transition-colors ${
         value === true
-          ? "bg-green-500 border-green-500 text-white"
+          ? "border-green-500 bg-green-500 text-white"
           : "border-gray-300 text-gray-400 hover:border-green-400"
       }`}
     >
@@ -59,32 +57,63 @@ const RegistroSeguridad = () => {
   const navigate = useNavigate();
 
   const [seguridadItems, setSeguridadItems] = useState<SeguridadItem[]>(
-    SEGURIDAD_ITEMS.map((item) => ({ ...item, value: null }))
+    FALLBACK_SEGURIDAD.map((item) => ({ ...item, value: null })),
   );
+  const [setupError, setSetupError] = useState<string | null>(null);
 
-  const [artItems, setArtItems] = useState<SeguridadItem[]>(
-    ART_ITEMS.map((item) => ({ ...item, value: null }))
-  );
+  useEffect(() => {
+    if (!obraId) return;
+
+    const loadSetup = async () => {
+      const draft = getReportDraft(obraId);
+      const draftMap = new Map(draft.safetyItems.map((item) => [item.id, item.status]));
+
+      try {
+        const setup = await api.getReportSetup(obraId);
+        const safetyCatalog = Array.isArray(setup?.safety) ? setup.safety : [];
+
+        const mappedItems: SeguridadItem[] = (safetyCatalog.length
+          ? safetyCatalog.map((item: any) => ({
+              id: Number(item.id_safety_measure),
+              label: item.name,
+            }))
+          : FALLBACK_SEGURIDAD
+        ).map((item) => ({
+          ...item,
+          value: draftMap.has(item.id) ? Boolean(draftMap.get(item.id)) : null,
+        }));
+
+        setSeguridadItems(mappedItems);
+      } catch {
+        setSeguridadItems(
+          FALLBACK_SEGURIDAD.map((item) => ({
+            ...item,
+            value: draftMap.has(item.id) ? Boolean(draftMap.get(item.id)) : null,
+          })),
+        );
+        setSetupError("No se pudo cargar medidas de seguridad. Se usan opciones locales.");
+      }
+    };
+
+    loadSetup();
+  }, [obraId]);
 
   if (!obraId) return null;
 
-  const allAnswered =
-    seguridadItems.every((i) => i.value !== null) &&
-    artItems.every((i) => i.value !== null);
+  const allAnswered = seguridadItems.every((item) => item.value !== null);
 
-  const handleSeguridadChange = (id: string, val: boolean) => {
-    setSeguridadItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, value: val } : item))
-    );
-  };
-
-  const handleArtChange = (id: string, val: boolean) => {
-    setArtItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, value: val } : item))
+  const handleSeguridadChange = (id: number, value: boolean) => {
+    setSeguridadItems((current) =>
+      current.map((item) => (item.id === id ? { ...item, value } : item)),
     );
   };
 
   const handleNext = () => {
+    saveReportDraft(obraId, {
+      safetyItems: seguridadItems
+        .filter((item) => item.value !== null)
+        .map((item) => ({ id: item.id, status: Boolean(item.value) })),
+    });
     navigate(ROUTE_BUILDERS.obraRegistroFinalizar(obraId));
   };
 
@@ -92,30 +121,9 @@ const RegistroSeguridad = () => {
     navigate(ROUTE_BUILDERS.obraRegistro(obraId));
   };
 
-  const renderItems = (
-    items: SeguridadItem[],
-    onChange: (id: string, val: boolean) => void
-  ) => (
-    <div className="divide-y divide-gray-100">
-      {items.map((item) => (
-        <div key={item.id} className="flex items-center justify-between py-3">
-          <span className="text-sm text-gray-700">{item.label}</span>
-          <BooleanToggle
-            value={item.value}
-            onChange={(val) => onChange(item.id, val)}
-          />
-        </div>
-      ))}
-    </div>
-  );
- console.log("seguridadItems:", seguridadItems);
-  console.log("artItems:", artItems);
-  console.log("allAnswered:", allAnswered);
   return (
     <div className="mx-auto w-full max-w-5xl pb-10">
-      <div className="overflow-hidden rounded-3xl shadow-lg border border-slate-200">
-
-        {/* HEADER */}
+      <div className="overflow-hidden rounded-3xl border border-slate-200 shadow-lg">
         <div className="bg-primary px-8 py-6">
           <RegistroHeader
             obraNombre={`Obra ${obraId}`}
@@ -125,20 +133,23 @@ const RegistroSeguridad = () => {
           />
         </div>
 
-        {/* BODY */}
         <div className="bg-[#F5F5F7] p-8">
-          <div className="bg-white rounded-2xl p-8 shadow-sm space-y-6">
+          <div className="space-y-6 rounded-2xl bg-white p-8 shadow-sm">
+            {setupError ? <p className="text-sm text-amber-700">{setupError}</p> : null}
 
-            {/* Seguridad e Higiene */}
             <div>
-              <h3 className="text-md font-semibold mb-2">Checklist de Seguridad e Higiene</h3>
-              {renderItems(seguridadItems, handleSeguridadChange)}
-            </div>
-
-            {/* ART */}
-            <div>
-              <h3 className="text-md font-semibold mb-2">ART Vigentes</h3>
-              {renderItems(artItems, handleArtChange)}
+              <h3 className="mb-2 text-md font-semibold">Checklist de Seguridad e Higiene</h3>
+              <div className="divide-y divide-gray-100">
+                {seguridadItems.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between py-3">
+                    <span className="text-sm text-gray-700">{item.label}</span>
+                    <BooleanToggle
+                      value={item.value}
+                      onChange={(val) => handleSeguridadChange(item.id, val)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <FooterActions
@@ -146,7 +157,6 @@ const RegistroSeguridad = () => {
               onNext={handleNext}
               disableNext={!allAnswered}
             />
-
           </div>
         </div>
       </div>
@@ -155,4 +165,3 @@ const RegistroSeguridad = () => {
 };
 
 export default RegistroSeguridad;
-

@@ -6,17 +6,17 @@ import { Button } from "../common/Button";
 import CardData from "./CardData";
 import { ChartNoAxesCombined, ClockAlert, ListChecks, MapPin, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { getAIGreeting } from "@/src/services/service";
-import { api } from "@/src/services/api";
+import { api, DashboardStats } from "@/src/services/api";
 import { Card } from "../common/Card";
 import { formatDate } from "@/src/utils/formateDate";
 import { ROUTES } from "../../constants/routes";
 import DropdownFilter from "./DropdownFilter";
 
 const DATA = [
-  { icon: ChartNoAxesCombined, title: "Obras activas", data: "4", color: "secondary" },
-  { icon: ShieldCheck, title: "ART-vigente", data: "100%", color: "accent" },
-  { icon: ClockAlert, title: "Tareas pendientes", data: "12", color: "primary" },
-  { icon: ListChecks, title: "Obras validadas", data: "3", color: "accent-2" },
+  { key: "activeProjects", icon: ChartNoAxesCombined, title: "Obras activas", color: "secondary" },
+  { key: "artVigente", icon: ShieldCheck, title: "ART-vigente", color: "accent" },
+  { key: "pendingTasks", icon: ClockAlert, title: "Tareas pendientes", color: "primary" },
+  { key: "validatedProjects", icon: ListChecks, title: "Obras validadas", color: "accent-2" },
 ];
 
 /* const DATAHistorialMarzo = [
@@ -38,6 +38,13 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [greeting, setGreeting] = useState<string>("Loading greeting...");
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    activeProjects: 0,
+    totalReports: 0,
+    pendingTasks: 0,
+    artVigente: "0%",
+    validatedProjects: 0,
+  });
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -72,11 +79,17 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const initDashboard = async () => {
-      const [msg] = await Promise.all([
-        getAIGreeting(user?.name || ""),
-        api.checkHealth(),
-      ]);
-      setGreeting(msg);
+      try {
+        const [msg, stats] = await Promise.all([
+          getAIGreeting(user?.name || ""),
+          api.getDashboardStats(),
+        ]);
+        setGreeting(msg);
+        setDashboardStats(stats);
+      } catch {
+        const msg = await getAIGreeting(user?.name || "");
+        setGreeting(msg);
+      }
     };
     initDashboard();
   }, [user?.name]);
@@ -104,13 +117,19 @@ const Home: React.FC = () => {
     <>
       <div className="grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
         <Search placeholder="Buscar obra..." className={`mb-4 ${user?.idRol === 1 ? "lg:col-span-3" : "lg:col-span-4"}`} />
-        {user.idRol === 1 && (  <Button variant="secondary" onClick={handleNewObraClick} className="mb-4 lg:col-span-1">+ Nueva obra</Button>) }
+        {user?.idRol === 1 && (  <Button variant="secondary" onClick={handleNewObraClick} className="mb-4 lg:col-span-1">+ Nueva obra</Button>) }
       
       </div>
       <h1 className="text-2xl font-bold mt-5">{greeting}</h1>
       <section className="mt-8 grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
         {DATA.map((item) => (
-          <CardData key={item.title} icon={item.icon} title={item.title} data={item.data} color={item.color} />
+          <CardData
+            key={item.title}
+            icon={item.icon}
+            title={item.title}
+            data={String(dashboardStats[item.key as keyof DashboardStats])}
+            color={item.color as "primary" | "secondary" | "accent" | "accent-2"}
+          />
         ))}
       </section>
       <Card className="mt-8 py-6 px-10 border-neutro-3 h-[400px] flex flex-col overflow-hidden " >
