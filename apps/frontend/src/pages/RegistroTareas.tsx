@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { useState } from "react";
-=======
 import { useEffect, useState } from "react";
->>>>>>> ec6de72 (Se conecta frontend con backend mediante los endpoints desarrollados)
 import { useNavigate, useParams } from "react-router-dom";
 import RegistroHeader from "../components/registro/RegistroHeader";
 import ChecklistGroup from "../components/registro/ChecklistGroup";
@@ -11,75 +7,6 @@ import { ROUTE_BUILDERS } from "../constants/routes";
 import { api } from "../services/api";
 import { getReportDraft, saveReportDraft } from "../utils/reportDraft";
 
-<<<<<<< HEAD
-const TAREAS_OPTIONS = [
-  { id: "tabique", label: "Levantamiento de tabique" },
-  { id: "embutido", label: "Embutido" },
-  { id: "canalizacion", label: "Canalización" },
-  { id: "revoque", label: "Revoque fino" },
-  { id: "carpeta", label: "Carpeta" },
-  { id: "impermeabilizacion", label: "Impermeabilización" },
-];
-
-const OFICIOS_OPTIONS = [
-  { id: "plomeria", label: "Plomería" },
-  { id: "albanileria", label: "Albañilería" },
-  { id: "techista", label: "Techista" },
-  { id: "electricidad", label: "Electricidad" },
-];
-
-const RegistroTareas = () => {
-  const { obraId } = useParams<{ obraId: string }>();
-  const navigate = useNavigate();
-
-  const [tareasSeleccionadas, setTareasSeleccionadas] = useState<string[]>([]);
-  const [oficiosSeleccionados, setOficiosSeleccionados] = useState<string[]>([]);
-
-  if (!obraId) return null;
-
-  const handleNext = () => {
-    navigate(ROUTE_BUILDERS.obraRegistroSeguridad(obraId));
-  };
-
-  const handleBack = () => {
-    navigate(ROUTE_BUILDERS.obraDetalle(obraId));
-  };
-
-
-   return (
-  <div className="mx-auto w-full max-w-5xl pb-10">
-
-    <div className="overflow-hidden rounded-3xl shadow-lg border border-slate-200">
-
-      {/* HEADER AZUL COMPLETO */}
-      <div className="bg-primary px-8 py-6">
-        <RegistroHeader
-          obraNombre={`Obra ${obraId}`}
-          fecha={new Date().toLocaleDateString()}
-          porcentaje={45}
-          pasoActual={1}
-        />
-      </div>
-
-      {/* BODY */}
-      <div className="bg-[#F5F5F7] p-8">
-
-        {/* Card blanca interna */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm space-y-8">
-
-          <ChecklistGroup
-            title="¿Qué tareas se realizaron?"
-            options={TAREAS_OPTIONS}
-            selected={tareasSeleccionadas}
-            onChange={setTareasSeleccionadas}
-          />
-
-          <ChecklistGroup
-            title="Oficios en obra"
-            options={OFICIOS_OPTIONS}
-            selected={oficiosSeleccionados}
-            onChange={setOficiosSeleccionados}
-=======
 type ChecklistOption = {
   id: string;
   label: string;
@@ -181,7 +108,6 @@ const RegistroTareas = () => {
             fecha={new Date().toLocaleDateString()}
             porcentaje={45}
             pasoActual={1}
->>>>>>> ec6de72 (Se conecta frontend con backend mediante los endpoints desarrollados)
           />
 
           <FooterActions
@@ -191,12 +117,6 @@ const RegistroTareas = () => {
           />
 
         </div>
-<<<<<<< HEAD
-      </div>
-    </div>
-  </div>
-);}
-=======
 
         <div className="bg-[#F5F5F7] p-8">
           <div className="space-y-8 rounded-2xl bg-white p-8 shadow-sm">
@@ -227,6 +147,5 @@ const RegistroTareas = () => {
     </div>
   );
 };
->>>>>>> ec6de72 (Se conecta frontend con backend mediante los endpoints desarrollados)
 
 export default RegistroTareas;

@@ -37,6 +37,7 @@ export const CardObra = ({
   user
 }: CardObraProps) => {
 
+
   return (
     <Card className="flex flex-col gap-6 w-[480px] h-[550px] flex-shrink-0 p-6 rounded-lg border-neutro-2">
 
