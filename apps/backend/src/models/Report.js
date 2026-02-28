@@ -40,10 +40,10 @@ class Report {
     static async getTasksForReport(idProject) {
         const sql = `
             SELECT 
-                e.id_etapa, 
-                te.nombre AS etapa_nombre, 
-                t.id_tarea, 
-                tt.nombre AS tarea_nombre
+                e.id_etapa as id_stage, 
+                te.nombre AS stage_name, 
+                t.id_tarea as id_task, 
+                tt.nombre AS task_name
             FROM ETAPA e
             JOIN TIPO_ETAPA te ON e.id_tipo_etapa = te.id_tipo_etapa
             JOIN TAREA t ON e.id_etapa = t.id_etapa
@@ -149,10 +149,10 @@ class Report {
         return await db.any(`
         SELECT 
             t.nombre as task_name, 
-            e.nombre as task_status -- Traemos el nombre en lugar del ID
+            e.nombre as task_status 
         FROM DETALLE_AVANCE_TAREA det 
         JOIN tipo_tarea t ON det.id_tarea = t.id_tipo_tarea 
-        JOIN ESTADO e ON det.id_estado_tarea = e.id_estado -- Nuevo Join
+        JOIN ESTADO e ON det.id_estado_tarea = e.id_estado
         WHERE det.id_registro_avance = $1`, [id]);
     }
 

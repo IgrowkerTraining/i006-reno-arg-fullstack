@@ -58,7 +58,8 @@ class ProjectService {
                 return newProject;
             });
         } catch (error) {          
-            return null;
+            console.error("Error createFullProject:", error.message);
+            throw error;
         }
     }
     static async updateProjectArt(id, artCoverageId) {

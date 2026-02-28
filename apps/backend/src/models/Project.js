@@ -170,6 +170,122 @@ WHERE p.id_proyecto = $1
     return parseInt(res.count);
 }
 
+static async getMonthlyDataForAI(projectId, month, year) {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+    const sql = `
+        SELECT 
+            p.codigo AS project_code, 
+            p.nombre AS project_name,
+            u_resp.nombre AS responsible_technician,
+            ra.id_registro_avance AS report_id,
+            ra.fecha AS report_date,
+            u_sup.nombre AS supervisor_name,
+            te.nombre AS stage_name,
+            tt.nombre AS task_name,
+            o.nombre AS trade_name,
+            ms.descripcion AS safety_measure,
+            ca.nombre_entidad_art AS art_name,
+            vt.estado AS validation_status,
+            vt.comentario AS validation_comment
+        FROM proyecto p
+        JOIN usuario u_resp ON p.id_responsable = u_resp.id_usuario
+        JOIN registro_avance ra ON p.id_proyecto = ra.id_proyecto
+        JOIN usuario u_sup ON ra.id_supervisor = u_sup.id_usuario
+        LEFT JOIN detalle_avance_tarea dat ON ra.id_registro_avance = dat.id_registro_avance
+        LEFT JOIN tarea t ON dat.id_avance_tarea = t.id_tarea
+        LEFT JOIN tipo_tarea tt ON t.id_tipo_tarea = tt.id_tipo_tarea
+        LEFT JOIN etapa e ON t.id_etapa = e.id_etapa
+        LEFT JOIN tipo_etapa te ON e.id_tipo_etapa = te.id_tipo_etapa
+        LEFT JOIN registro_oficio ro ON ra.id_registro_avance = ro.id_reg_oficio
+        LEFT JOIN oficio o ON ro.id_oficio = o.id_oficio
+        LEFT JOIN registro_seguridad rs ON ra.id_registro_avance = rs.id_registro_avance
+        LEFT JOIN medidas_seguridad ms ON rs.id_medida_seg = ms.id_medidas_seg
+        LEFT JOIN cat_art ca ON p.id_art = ca.id_cat_art
+        LEFT JOIN validacion_tecnica vt ON ra.id_registro_avance = vt.id_registro_avance
+        WHERE p.id_proyecto = $1 
+          AND ra.fecha BETWEEN $2 AND $3
+        ORDER BY ra.fecha ASC, te.nombre ASC;
+    `;
+
+    const rows = await db.any(sql, [projectId, startDate, endDate]);
+    
+    if (!rows || rows.length === 0) return null;
+
+    return this._formatMonthlyJSON(rows, startDate, endDate);
+}
+
+static _formatMonthlyJSON(rows, start, end) {
+    const context = {
+        proyecto: {
+            codigo: rows[0].proyecto_codigo,
+            nombre: rows[0].proyecto_nombre,
+            responsable_tecnico: rows[0].responsable_tecnico
+        },
+        periodo: { desde: start, hasta: end },
+        registros_avance: []
+    };
+
+    const reportsMap = new Map();
+
+    rows.forEach(row => {
+        if (!reportsMap.has(row.id_reporte)) {
+            reportsMap.set(row.id_reporte, {
+                fecha: row.fecha,
+                supervisor: row.supervisor_nombre,
+                actividad_por_etapa: [],
+                recursos_y_seguridad: {
+                    oficios_activos: new Set(),
+                    medidas_seguridad_implementadas: new Set(),
+                    art_vigente: row.art_nombre || "No especificada"
+                },
+                validaciones_tecnicas: []
+            });
+        }
+
+        const report = reportsMap.get(row.id_reporte);
+
+        if (row.etapa_nombre) {
+            let etapa = report.actividad_por_etapa.find(e => e.etapa === row.etapa_nombre);
+            if (!etapa) {
+                etapa = { etapa: row.etapa_nombre, tareas_ejecutadas: new Set() };
+                report.actividad_por_etapa.push(etapa);
+            }
+            etapa.tareas_ejecutadas.add(row.tarea_nombre);
+        }
+
+        if (row.oficio_nombre) report.recursos_y_seguridad.oficios_activos.add(row.oficio_nombre);
+        if (row.medida_seguridad) report.recursos_y_seguridad.medidas_seguridad_implementadas.add(row.medida_seguridad);
+
+        if (row.validacion_estado) {
+            const yaExiste = report.validaciones_tecnicas.some(v => v.comentario_supervisor === row.validacion_comentario);
+            if (!yaExiste) {
+                report.validaciones_tecnicas.push({
+                    etapa_validada: row.etapa_nombre,
+                    estado: row.validacion_estado,
+                    comentario_supervisor: row.validacion_comentario
+                });
+            }
+        }
+    });
+
+    context.registros_avance = Array.from(reportsMap.values()).map(r => ({
+        ...r,
+        actividad_por_etapa: r.actividad_por_etapa.map(e => ({
+            ...e,
+            tareas_ejecutadas: Array.from(e.tareas_ejecutadas)
+        })),
+        recursos_y_seguridad: {
+            ...r.recursos_y_seguridad,
+            oficios_activos: Array.from(r.recursos_y_seguridad.oficios_activos),
+            medidas_seguridad_implementadas: Array.from(r.recursos_y_seguridad.medidas_seguridad_implementadas)
+        }
+    }));
+
+    return context;
+}
+
 }
 
 module.exports = Project;
