@@ -384,7 +384,7 @@ const options = {
                             description: 'Año del reporte (YYYY)'
                         }
                     }
-                }
+                },
                 CatalogSystem: {
                     type: 'object',
                     properties: {

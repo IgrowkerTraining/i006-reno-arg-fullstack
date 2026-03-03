@@ -34,6 +34,6 @@ class AnalysisIAService {
     }
 }
 
-}
+
 
 module.exports = AnalysisIAService; 
