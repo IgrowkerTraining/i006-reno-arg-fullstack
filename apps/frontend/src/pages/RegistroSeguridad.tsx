@@ -63,38 +63,39 @@ const RegistroSeguridad = () => {
 
   useEffect(() => {
     if (!obraId) return;
+ const loadSetup = async () => {
+  const draft = getReportDraft(obraId);
+  const draftMap = new Map(
+    (draft.safetyItems || []).map((item) => [Number(item.id), item.status])
+  );
 
-    const loadSetup = async () => {
-      const draft = getReportDraft(obraId);
-      const draftMap = new Map(draft.safetyItems.map((item) => [item.id, item.status]));
+  try {
+    const setup = await api.getReportSetup(obraId);
+    const hasDbData = Array.isArray(setup?.safety) && setup.safety.length > 0;
+    
+    const catalog = hasDbData 
+      ? setup.safety.map((item: any) => ({
+          id: Number(item.id_safety_measure),
+          label: item.name,
+        }))
+      : FALLBACK_SEGURIDAD;
 
-      try {
-        const setup = await api.getReportSetup(obraId);
-        const safetyCatalog = Array.isArray(setup?.safety) ? setup.safety : [];
+    const finalItems = catalog.map(item => ({
+      ...item,
+      value: draftMap.has(item.id) ? draftMap.get(item.id) : null
+    }));
 
-        const mappedItems: SeguridadItem[] = (safetyCatalog.length
-          ? safetyCatalog.map((item: any) => ({
-              id: Number(item.id_safety_measure),
-              label: item.name,
-            }))
-          : FALLBACK_SEGURIDAD
-        ).map((item) => ({
-          ...item,
-          value: draftMap.has(item.id) ? Boolean(draftMap.get(item.id)) : null,
-        }));
+    setSeguridadItems(finalItems);
+    if (!hasDbData) console.warn("API respondió vacío, usando Fallback");
 
-        setSeguridadItems(mappedItems);
-      } catch {
-        setSeguridadItems(
-          FALLBACK_SEGURIDAD.map((item) => ({
-            ...item,
-            value: draftMap.has(item.id) ? Boolean(draftMap.get(item.id)) : null,
-          })),
-        );
-        setSetupError("No se pudo cargar medidas de seguridad. Se usan opciones locales.");
-      }
-    };
-
+  } catch (error) {
+    console.error(error.message);
+    setSeguridadItems(FALLBACK_SEGURIDAD.map(item => ({
+      ...item,
+      value: draftMap.has(item.id) ? draftMap.get(item.id) : null
+    })));
+  }
+};
     loadSetup();
   }, [obraId]);
 

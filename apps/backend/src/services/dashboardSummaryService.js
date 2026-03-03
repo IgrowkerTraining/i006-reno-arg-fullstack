@@ -7,17 +7,21 @@ const Validation = require('../models/Validation');
 class DashboardService {
     static async getStats() {
         
-        const [projectsCount, reportsCount, pendingCount] = await Promise.all([
+        const [projectsCount, reportsCount, pendingCount, artData] = await Promise.all([
             Project.countAll(),
             Report.countAll(),
-            Validation.countByStatus('PENDIENTE') 
+            Validation.countByStatus('PENDIENTE'),
+            Project.countArtActive()
         ]);
+        const artPercentage = artData.total > 0 
+            ? Math.round((artData.with_art / artData.total) * 100) 
+            : 0;
 
         return {
             activeProjects: projectsCount,
             totalReports: reportsCount,
             pendingTasks: pendingCount,
-            artVigente: "100%",
+            artVigente: `${artPercentage}%`,
             validatedProjects: 0 
         };
     }

@@ -71,7 +71,7 @@ export interface CreateDailyReportPayload {
   comment: string;
   selectedTasks: number[];
   selectedTrades: number[];
-  safetyItems: Array<{ id: number; status: boolean }>;
+  safetyItems: Array<{ id_medida_seg: number; cumple: boolean }>;
 }
 
 const getAuthToken = () => storage.getToken() || localStorage.getItem("token");

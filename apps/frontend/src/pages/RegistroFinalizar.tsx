@@ -44,8 +44,11 @@ const RegistroFinalizar = () => {
         comment: observacion.trim(),
         selectedTasks: reportDraft.selectedTasks,
         selectedTrades: reportDraft.selectedTrades,
-        safetyItems: reportDraft.safetyItems,
-      });
+        safetyItems: reportDraft.safetyItems.map((item) => ({
+        id_medida_seg: Number(item.id),
+        cumple: Boolean(item.status),
+      })),
+    });
 
       clearReportDraft(obraId);
       navigate(ROUTE_BUILDERS.obraDetalle(obraId));

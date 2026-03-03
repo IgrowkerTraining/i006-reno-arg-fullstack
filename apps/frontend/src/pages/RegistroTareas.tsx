@@ -31,8 +31,8 @@ const RegistroTareas = () => {
   const { obraId } = useParams<{ obraId: string }>();
   const navigate = useNavigate();
 
-  const [tareasOptions, setTareasOptions] = useState<ChecklistOption[]>(FALLBACK_TAREAS);
-  const [oficiosOptions, setOficiosOptions] = useState<ChecklistOption[]>(FALLBACK_OFICIOS);
+  const [tareasOptions, setTareasOptions] = useState<ChecklistOption[]>([])//(FALLBACK_TAREAS);
+  const [oficiosOptions, setOficiosOptions] = useState<ChecklistOption[]>([])//(FALLBACK_OFICIOS);
   const [tareasSeleccionadas, setTareasSeleccionadas] = useState<string[]>([]);
   const [oficiosSeleccionados, setOficiosSeleccionados] = useState<string[]>([]);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -42,6 +42,8 @@ const RegistroTareas = () => {
 
     const loadSetup = async () => {
       const draft = getReportDraft(obraId);
+
+
       setTareasSeleccionadas(draft.selectedTasks.map(String));
       setOficiosSeleccionados(draft.selectedTrades.map(String));
 
@@ -75,10 +77,14 @@ const RegistroTareas = () => {
               id: String(trade.id_trade),
               label: trade.name,
             })),
+            
           );
+        
         }
       } catch {
         setSetupError("No se pudo cargar el catálogo del registro. Se usan opciones locales.");
+        setTareasOptions(FALLBACK_TAREAS);
+        setOficiosOptions(FALLBACK_OFICIOS);
       }
     };
 

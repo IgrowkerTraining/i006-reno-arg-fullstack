@@ -168,9 +168,19 @@ WHERE p.id_proyecto = $1
   static async countAll() {
     const res = await db.one('SELECT COUNT(*) FROM PROYECTO');
     return parseInt(res.count);
-}
+  }
+  static async countArtActive() {
+    const sql = `
+        SELECT 
+            COUNT(*)::integer AS total,
+            COUNT(id_art)::integer AS with_art
+        FROM proyecto;
+    `;
+    return await db.one(sql);
+    console.error("Error countArtActive:", error.message);
+  }
 
-static async getMonthlyDataForAI(projectId, month, year) {
+  static async getMonthlyDataForAI(projectId, month, year) {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
@@ -210,81 +220,81 @@ static async getMonthlyDataForAI(projectId, month, year) {
     `;
 
     const rows = await db.any(sql, [projectId, startDate, endDate]);
-    
+
     if (!rows || rows.length === 0) return null;
 
     return this._formatMonthlyJSON(rows, startDate, endDate);
-}
+  }
 
-static _formatMonthlyJSON(rows, start, end) {
+  static _formatMonthlyJSON(rows, start, end) {
     const context = {
-        proyecto: {
-            codigo: rows[0].proyecto_codigo,
-            nombre: rows[0].proyecto_nombre,
-            responsable_tecnico: rows[0].responsable_tecnico
-        },
-        periodo: { desde: start, hasta: end },
-        registros_avance: []
+      proyecto: {
+        codigo: rows[0].proyecto_codigo,
+        nombre: rows[0].proyecto_nombre,
+        responsable_tecnico: rows[0].responsable_tecnico
+      },
+      periodo: { desde: start, hasta: end },
+      registros_avance: []
     };
 
     const reportsMap = new Map();
 
     rows.forEach(row => {
-        if (!reportsMap.has(row.id_reporte)) {
-            reportsMap.set(row.id_reporte, {
-                fecha: row.fecha,
-                supervisor: row.supervisor_nombre,
-                actividad_por_etapa: [],
-                recursos_y_seguridad: {
-                    oficios_activos: new Set(),
-                    medidas_seguridad_implementadas: new Set(),
-                    art_vigente: row.art_nombre || "No especificada"
-                },
-                validaciones_tecnicas: []
-            });
+      if (!reportsMap.has(row.id_reporte)) {
+        reportsMap.set(row.id_reporte, {
+          fecha: row.fecha,
+          supervisor: row.supervisor_nombre,
+          actividad_por_etapa: [],
+          recursos_y_seguridad: {
+            oficios_activos: new Set(),
+            medidas_seguridad_implementadas: new Set(),
+            art_vigente: row.art_nombre || "No especificada"
+          },
+          validaciones_tecnicas: []
+        });
+      }
+
+      const report = reportsMap.get(row.id_reporte);
+
+      if (row.etapa_nombre) {
+        let etapa = report.actividad_por_etapa.find(e => e.etapa === row.etapa_nombre);
+        if (!etapa) {
+          etapa = { etapa: row.etapa_nombre, tareas_ejecutadas: new Set() };
+          report.actividad_por_etapa.push(etapa);
         }
+        etapa.tareas_ejecutadas.add(row.tarea_nombre);
+      }
 
-        const report = reportsMap.get(row.id_reporte);
+      if (row.oficio_nombre) report.recursos_y_seguridad.oficios_activos.add(row.oficio_nombre);
+      if (row.medida_seguridad) report.recursos_y_seguridad.medidas_seguridad_implementadas.add(row.medida_seguridad);
 
-        if (row.etapa_nombre) {
-            let etapa = report.actividad_por_etapa.find(e => e.etapa === row.etapa_nombre);
-            if (!etapa) {
-                etapa = { etapa: row.etapa_nombre, tareas_ejecutadas: new Set() };
-                report.actividad_por_etapa.push(etapa);
-            }
-            etapa.tareas_ejecutadas.add(row.tarea_nombre);
+      if (row.validacion_estado) {
+        const yaExiste = report.validaciones_tecnicas.some(v => v.comentario_supervisor === row.validacion_comentario);
+        if (!yaExiste) {
+          report.validaciones_tecnicas.push({
+            etapa_validada: row.etapa_nombre,
+            estado: row.validacion_estado,
+            comentario_supervisor: row.validacion_comentario
+          });
         }
-
-        if (row.oficio_nombre) report.recursos_y_seguridad.oficios_activos.add(row.oficio_nombre);
-        if (row.medida_seguridad) report.recursos_y_seguridad.medidas_seguridad_implementadas.add(row.medida_seguridad);
-
-        if (row.validacion_estado) {
-            const yaExiste = report.validaciones_tecnicas.some(v => v.comentario_supervisor === row.validacion_comentario);
-            if (!yaExiste) {
-                report.validaciones_tecnicas.push({
-                    etapa_validada: row.etapa_nombre,
-                    estado: row.validacion_estado,
-                    comentario_supervisor: row.validacion_comentario
-                });
-            }
-        }
+      }
     });
 
     context.registros_avance = Array.from(reportsMap.values()).map(r => ({
-        ...r,
-        actividad_por_etapa: r.actividad_por_etapa.map(e => ({
-            ...e,
-            tareas_ejecutadas: Array.from(e.tareas_ejecutadas)
-        })),
-        recursos_y_seguridad: {
-            ...r.recursos_y_seguridad,
-            oficios_activos: Array.from(r.recursos_y_seguridad.oficios_activos),
-            medidas_seguridad_implementadas: Array.from(r.recursos_y_seguridad.medidas_seguridad_implementadas)
-        }
+      ...r,
+      actividad_por_etapa: r.actividad_por_etapa.map(e => ({
+        ...e,
+        tareas_ejecutadas: Array.from(e.tareas_ejecutadas)
+      })),
+      recursos_y_seguridad: {
+        ...r.recursos_y_seguridad,
+        oficios_activos: Array.from(r.recursos_y_seguridad.oficios_activos),
+        medidas_seguridad_implementadas: Array.from(r.recursos_y_seguridad.medidas_seguridad_implementadas)
+      }
     }));
 
     return context;
-}
+  }
 
 }
 

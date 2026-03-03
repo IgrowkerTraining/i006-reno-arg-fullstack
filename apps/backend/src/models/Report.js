@@ -55,26 +55,30 @@ class Report {
         return this._formatTasksByStage(rows);
     }
 
-    static _formatTasksByStage(rows) {
-        return rows.reduce((acc, row) => {
-            let stage = acc.find(s => s.id_etapa === row.id_etapa);
-            if (!stage) {
-                stage = {
-                    id_etapa: row.id_etapa,
-                    nombre_etapa: row.etapa_nombre,
-                    tareas: []
-                };
-                acc.push(stage);
-            }
-            if (row.id_tarea) {
-                stage.tareas.push({
-                    id_tarea: row.id_tarea,
-                    nombre_tarea: row.tarea_nombre
-                });
-            }
-            return acc;
-        }, []);
-    }
+   static _formatTasksByStage(rows) {
+    return rows.reduce((acc, row) => {
+        // 1. Usamos row.id_stage (que es como viene del SQL)
+        let stage = acc.find(s => s.id_etapa === row.id_stage);
+        
+        if (!stage) {
+            stage = {
+                id_etapa: row.id_stage,
+                nombre_etapa: row.stage_name, // Antes decía etapa_nombre (error)
+                tareas: []
+            };
+            acc.push(stage);
+        }
+
+        // 2. Usamos row.id_task y row.task_name
+        if (row.id_task) {
+            stage.tareas.push({
+                id_tarea: row.id_task,
+                nombre_tarea: row.task_name // Antes decía tarea_nombre (error)
+            });
+        }
+        return acc;
+    }, []);
+}
     static async _insertTasks(t, idReport, tasks) {
         if (!tasks || tasks.length === 0) return;
         const queries = tasks.map(idTarea =>
