@@ -275,6 +275,22 @@ const options = {
                         },
                     },
                 },
+                ProjectReportRequest: {
+                    type: 'object',
+                    required: ['month', 'year'],
+                    properties: {
+                        month: {
+                            type: 'string',
+                            example: '04',
+                            description: 'Mes del reporte (MM)'
+                        },
+                        year: {
+                            type: 'string',
+                            example: '2026',
+                            description: 'Año del reporte (YYYY)'
+                        }
+                    }
+                }
             },
         },
     },
