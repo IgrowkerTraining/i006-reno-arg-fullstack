@@ -1,45 +1,32 @@
-const Project = require('../models/Project');
-const AnalysisIA = require('../models/AnalysisIA');
+
+const snapshotModule = require('../mocks/snapshotMock');
+const snapshotMock = snapshotModule.default;  // 👈 usar el default
+// const Project = require('../models/Project');
+// const AnalysisIA = require('../models/AnalysisIA');
 
 class AnalysisIAService {
 
     static async createIaAnalysis(projectId, month, year) {
-    
-    const contextData = await Project.getMonthlyDataForAI(projectId, month, year);
-
-    if (!contextData || contextData.length === 0) {
-        return { 
-            error: "No se encontraron registros de avance para el período seleccionado.",
-            status: 404 
-        };
+        const resultIA = await this.callExternalAI(snapshotMock); //comentado hasta que se obtena URL API IA
+        // const resultIA = await this.callExternalAI(requestBody2); //comentado hasta que se obtena URL API IA
+        return await resultIA;
+        //  const savedAnalysis = await AnalysisIA.save(projectId, finalPayload);
+        // return savedAnalysis; 
+        //return finalPayload; // Retorno el payload que se enviaría a la IA para pruebas
     }
-
-    try {  
-        //this.callExternalAI(projectId, month, year, contextData); // Descomentar para usar la función real de llamada a la IA externa
-        
-        return {
-            success: true,
-            data: contextData,
-        };
-    } catch (error) {
-        console.error("Error al procesar análisis con IA:", error);
-        throw error;
-    }
-}
-static async callExternalAI(contextData) {
-    const AI_URL = '....';
-
-    try {
+    static async callExternalAI(requestBody) {
+        const AI_URL = 'https://orange-space-adventure-4j6747vw4vvj2q59j-8000.app.github.dev/api/v1/analisis/iniciar';
+        // console.log("Body enviado:", requestBody);
         const response = await fetch(AI_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(contextData)
+            body: JSON.stringify(requestBody )
         });
 
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-
+        
+        // if (!response.ok) {
+        //     throw new Error(`AI_SERVICE_ERROR: ${response.status} ${response.statusText}`);
+        // }
         return await response.json();
     } catch (error) {
         console.error("Error en la conexión:", error.message);

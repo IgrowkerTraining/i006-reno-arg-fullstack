@@ -6,43 +6,25 @@ const AIAnalysisController = require('../controllers/analysisIaController');
  * @swagger
  * /api/analysis-ia/generate/{projectId}:
  *   post:
- *     summary: Generar análisis mensual de IA
- *     description: Recupera todos los reportes del mes y genera un análisis semántico utilizando Inteligencia Artificial.
- *     tags: [IA]
- *     security:
- *       - bearerAuth: []
+ *     summary: Generar reporte mensual para auditoría
+ *     tags: [ReportsAI]
  *     parameters:
  *       - in: path
  *         name: projectId
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID del proyecto
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [month, year]
- *             properties:
- *               month:
- *                 type: integer
- *                 example: 2
- *               year:
- *                 type: integer
- *                 example: 2026
+ *             $ref: '#/components/schemas/ProjectReportRequest'
  *     responses:
- *       200:
- *         description: Análisis generado exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AIAnalysisResponse'
- *       404:
- *         description: No se encontraron datos para el período
+ *       201:
+ *         description: Reporte generado correctamente
  */
-router.post('/generate/:projectId', AIAnalysisController.create);
 
+router.post('/generate/:projectId', AIAnalysisController.create);
 
 module.exports = router;
