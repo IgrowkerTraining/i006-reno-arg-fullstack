@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const AIAnalysisController = require('../controllers/analysisIaController');
-// import AnalysisIaController from "../controllers/analysisIaController.js";
 
+const AIAnalysisController = require('../controllers/analysisIaController');
 /**
  * @swagger
  * /api/analysis-ia/generate/{projectId}:

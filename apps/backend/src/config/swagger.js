@@ -4,6 +4,12 @@ const swaggerJSDoc = require('swagger-jsdoc');
 const options = {
     definition: {
         openapi: '3.0.0',
+        servers: [
+            {
+                url: 'http://localhost:3000',
+                description: 'Servidor de Desarrollo (Local)',
+            },
+        ],
         // ... info, servers
         components: {
             securitySchemes: {
@@ -142,6 +148,23 @@ const options = {
                         },
                     ],
                 },
+                ProjectSetupData: {
+                    type: 'object',
+                    properties: {
+                        systems: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/CatalogSystem' }
+                        },
+                        planningStructure: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/PlanningStructure' }
+                        },
+                        artsCoverage: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/CatalogArt' }
+                        }
+                    }
+                },
                 ProjectCreateInput: {
                     type: 'object',
                     required: [
@@ -268,8 +291,79 @@ const options = {
                             items: {
                                 type: 'object',
                                 properties: {
-                                    id_safety: { type: 'integer', example: 5 },
-                                    status: { type: 'boolean', example: true },
+                                    id_medida_seg: { type: 'integer', example: 1 },
+                                    cumple: { type: 'boolean', example: true },
+                                    observacion: { type: 'string', example: '' },
+                                },
+                            },
+                        },
+                    },
+                },
+                Validation: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        reportId: {
+                            type: 'integer',
+                            description: 'ID del reporte asociado',
+                            example: 10
+                        },
+                        status: {
+                            type: 'string',
+                            enum: ['PENDIENTE', 'APROBADO', 'RECHAZADO'],
+                            example: 'PENDIENTE'
+                        },
+                        observations: {
+                            type: 'string',
+                            example: 'Pendiente de revisión por el ingeniero de obra.'
+                        },
+                        updatedAt: {
+                            type: 'string',
+                            format: 'date-time',
+                            example: '2026-02-27T10:00:00Z'
+                        },
+                    },
+                },
+                ValidationUpdateInput: {
+                    type: 'object',
+                    required: ['status'],
+                    properties: {
+                        status: {
+                            type: 'string',
+                            enum: ['APROBADO', 'RECHAZADO'],
+                            example: 'APROBADO',
+                        },
+                        observations: {
+                            type: 'string',
+                            example: 'Revisión técnica satisfactoria.',
+                        },
+                    },
+                }, CatalogTrades: {
+                    type: 'object',
+                    properties: {
+                        id_trade: { type: 'integer', example: 1 },
+                        name: { type: 'string', example: 'Albañilería' },
+                    },
+                },
+                CatalogSafety: {
+                    type: 'object',
+                    properties: {
+                        id_safety_measure: { type: 'integer', example: 1 },
+                        name: { type: 'string', example: 'Uso de Casco Obligatorio' },
+                    },
+                },
+                StageWithTasks: {
+                    type: 'object',
+                    properties: {
+                        id_etapa: { type: 'integer', example: 3 },
+                        nombre_etapa: { type: 'string', example: 'Demolición y retiro' },
+                        tareas: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id_tarea: { type: 'integer', example: 5 },
+                                    nombre_tarea: { type: 'string', example: 'Picado de pared' },
                                 },
                             },
                         },
@@ -291,6 +385,143 @@ const options = {
                         }
                     }
                 }
+                CatalogSystem: {
+                    type: 'object',
+                    properties: {
+                        id_system: { type: 'integer', example: 1 },
+                        name: { type: 'string', example: 'Tradicional Ladrillo' }
+                    }
+                },
+                CatalogArt: {
+                    type: 'object',
+                    properties: {
+                        id_art: { type: 'integer', example: 1 },
+                        name: { type: 'string', example: 'Provincia ART' }
+                    }
+                },
+                PlanningStructure: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        name: { type: 'string', example: 'Demolición' },
+                        tasks: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'integer', example: 10 },
+                                    name: { type: 'string', example: 'Remoción de escombros' } 
+                                }
+                            }
+                        }
+                    }
+                },
+                ReportSetupData: {
+                    type: 'object',
+                    properties: {
+                        tasks: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id_etapa: { type: 'integer', example: 3 },
+                                    nombre_etapa: { type: 'string', example: 'Demolición y retiro' },
+                                    tareas: {
+                                        type: 'array',
+                                        items: {
+                                            type: 'object',
+                                            properties: {
+                                                id_tarea: { type: 'integer', example: 5 },
+                                                nombre_tarea: { type: 'string', example: 'Picado de pared' }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        trades: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/CatalogTrades' }
+                        },
+                        safety: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/CatalogSafety' }
+                        }
+                    }
+                },
+                AIAnalysisResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        data: {
+                            type: 'object',
+                            properties: {
+                                proyecto: {
+                                    type: 'object',
+                                    properties: {
+                                        codigo: { type: 'string', example: 'RENO-ARG-2026-15' },
+                                        nombre: { type: 'string', example: 'Vivienda unifamiliar' },
+                                        responsable_tecnico: { type: 'string', example: 'Natasha' }
+                                    }
+                                },
+                                periodo: {
+                                    type: 'object',
+                                    properties: {
+                                        desde: { type: 'string', example: '2026-02-01' },
+                                        hasta: { type: 'string', example: '2026-02-28' }
+                                    }
+                                },
+                                registros_avance: {
+                                    type: 'array',
+                                    items: {
+                                        type: 'object',
+                                        properties: {
+                                            fecha: { type: 'string', format: 'date-time', example: '2026-02-27T03:00:00.000Z' },
+                                            supervisor: { type: 'string', example: 'Juan' },
+                                            actividad_por_etapa: {
+                                                type: 'array',
+                                                items: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        etapa: { type: 'string', example: 'Demolición y retiro' },
+                                                        tareas_ejecutadas: { 
+                                                            type: 'array', 
+                                                            items: { type: 'string' }, 
+                                                            example: ['Levantamiento de piso', 'Picado de pared'] 
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            recursos_y_seguridad: {
+                                                type: 'object',
+                                                properties: {
+                                                    oficios_activos: { type: 'array', items: { type: 'string' }, example: ['Albañilería'] },
+                                                    medidas_seguridad_implementadas: { type: 'array', items: { type: 'string' }, example: ['Uso de Casco Obligatorio'] },
+                                                    art_vigente: { type: 'string', example: 'No especificada' }
+                                                }
+                                            },
+                                            validaciones_tecnicas: {
+                                                type: 'array',
+                                                items: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        etapa_validada: { type: 'string', example: 'Demolición y retiro' },
+                                                        estado: { type: 'string', example: 'PENDIENTE' },
+                                                        comentario_supervisor: { type: 'string', nullable: true, example: null }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                analisis_ia: { 
+                                    type: 'string', 
+                                    example: 'El análisis de IA se presentará aquí una vez conectado el servicio de IA...' 
+                                }
+                            }
+                        }
+                    }
+                },
             },
         },
     },

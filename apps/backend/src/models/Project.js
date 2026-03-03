@@ -168,7 +168,131 @@ WHERE p.id_proyecto = $1
   static async countAll() {
     const res = await db.one('SELECT COUNT(*) FROM PROYECTO');
     return parseInt(res.count);
-}
+  }
+  static async countArtActive() {
+    const sql = `
+        SELECT 
+            COUNT(*)::integer AS total,
+            COUNT(id_art)::integer AS with_art
+        FROM proyecto;
+    `;
+    return await db.one(sql);
+    console.error("Error countArtActive:", error.message);
+  }
+
+  static async getMonthlyDataForAI(projectId, month, year) {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+    const sql = `
+        SELECT 
+            p.codigo AS project_code, 
+            p.nombre AS project_name,
+            u_resp.nombre AS responsible_technician,
+            ra.id_registro_avance AS report_id,
+            TO_CHAR(ra.fecha, 'DD-MM-YYYY') AS report_date,
+            u_sup.nombre AS supervisor_name,
+            te.nombre AS stage_name,
+            tt.nombre AS task_name,
+            o.nombre AS trade_name,
+            ms.descripcion AS safety_measure,
+            ca.nombre_entidad_art AS art_name,
+            vt.estado AS validation_status,
+            vt.comentario AS validation_comment
+        FROM proyecto p
+        JOIN usuario u_resp ON p.id_responsable = u_resp.id_usuario
+        JOIN registro_avance ra ON p.id_proyecto = ra.id_proyecto
+        JOIN usuario u_sup ON ra.id_supervisor = u_sup.id_usuario
+        LEFT JOIN detalle_avance_tarea dat ON ra.id_registro_avance = dat.id_registro_avance
+        LEFT JOIN tarea t ON dat.id_avance_tarea = t.id_tarea
+        LEFT JOIN tipo_tarea tt ON t.id_tipo_tarea = tt.id_tipo_tarea
+        LEFT JOIN etapa e ON t.id_etapa = e.id_etapa
+        LEFT JOIN tipo_etapa te ON e.id_tipo_etapa = te.id_tipo_etapa
+        LEFT JOIN registro_oficio ro ON ra.id_registro_avance = ro.id_reg_oficio
+        LEFT JOIN oficio o ON ro.id_oficio = o.id_oficio
+        LEFT JOIN registro_seguridad rs ON ra.id_registro_avance = rs.id_registro_avance
+        LEFT JOIN medidas_seguridad ms ON rs.id_medida_seg = ms.id_medidas_seg
+        LEFT JOIN cat_art ca ON p.id_art = ca.id_cat_art
+        LEFT JOIN validacion_tecnica vt ON ra.id_registro_avance = vt.id_registro_avance
+        WHERE p.id_proyecto = $1 
+          AND ra.fecha BETWEEN $2 AND $3
+        ORDER BY ra.fecha ASC, te.nombre ASC;
+    `;
+
+    const rows = await db.any(sql, [projectId, startDate, endDate]);
+
+    if (!rows || rows.length === 0) return null;
+
+    return this._formatMonthlyJSON(rows, startDate, endDate);
+  }
+static _formatMonthlyJSON(rows, start, end) {
+    const context = {
+      proyecto: {
+        codigo: rows[0].project_code, 
+        nombre: rows[0].project_name,
+        responsable_tecnico: rows[0].responsible_technician
+      },
+      periodo: { desde: start, hasta: end },
+      registros_avance: []
+    };
+
+    const reportsMap = new Map();
+
+    rows.forEach(row => {
+      if (!reportsMap.has(row.report_id)) {
+        reportsMap.set(row.report_id, {
+          fecha: row.report_date,
+          supervisor: row.supervisor_name,
+          actividad_por_etapa: [],
+          recursos_y_seguridad: {
+            oficios_activos: new Set(),
+            medidas_seguridad_implementadas: new Set(),
+            art_vigente: row.art_name || "No especificada"
+          },
+          validaciones_tecnicas: []
+        });
+      }
+
+      const report = reportsMap.get(row.report_id);
+
+      if (row.stage_name) {
+        let etapa = report.actividad_por_etapa.find(e => e.etapa === row.stage_name);
+        if (!etapa) {
+          etapa = { etapa: row.stage_name, tareas_ejecutadas: new Set() };
+          report.actividad_por_etapa.push(etapa);
+        }
+        if (row.task_name) etapa.tareas_ejecutadas.add(row.task_name);
+      }
+
+      if (row.trade_name) report.recursos_y_seguridad.oficios_activos.add(row.trade_name);
+      if (row.safety_measure) report.recursos_y_seguridad.medidas_seguridad_implementadas.add(row.safety_measure);
+
+      if (row.validation_status) {
+        const yaExiste = report.validaciones_tecnicas.some(v => v.comentario_supervisor === row.validation_comment);
+        if (!yaExiste) {
+          report.validaciones_tecnicas.push({
+            etapa_validada: row.stage_name,
+            estado: row.validation_status,
+            comentario_supervisor: row.validation_comment
+          });
+        }
+      }
+    });
+    context.registros_avance = Array.from(reportsMap.values()).map(r => ({
+      ...r,
+      actividad_por_etapa: r.actividad_por_etapa.map(e => ({
+        ...e,
+        tareas_ejecutadas: Array.from(e.tareas_ejecutadas)
+      })),
+      recursos_y_seguridad: {
+        ...r.recursos_y_seguridad,
+        oficios_activos: Array.from(r.recursos_y_seguridad.oficios_activos),
+        medidas_seguridad_implementadas: Array.from(r.recursos_y_seguridad.medidas_seguridad_implementadas)
+      }
+    }));
+
+    return context;
+  }
 
 }
 

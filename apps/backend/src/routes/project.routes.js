@@ -111,6 +111,7 @@ router.get('/:id', verifyToken, ProjectController.getProjectById);
  *               status: 400
  */
 router.post('/', verifyToken, ProjectController.createProject);
+
 router.patch('/:id/art', verifyToken, ProjectController.updateProjectArt);
 
 module.exports = router;

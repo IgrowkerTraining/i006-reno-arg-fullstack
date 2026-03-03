@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { CardObra } from "../components/common/CardObra";
 import { useAuthApi } from "../hooks/useAuthApi";
 import { Search } from "../components/common/Search";
@@ -9,21 +9,31 @@ import { useNavigate } from "react-router-dom";
 const MisObras: React.FC = () => {
   const { user } = useAuth();
   const { getProjects } = useAuthApi();
-  const [projects, setProjects] = React.useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchObras = async () => {
       try {
+        setLoading(true);
         const data = await getProjects();
         setProjects(data);
       } catch (error) {
         console.error("Error al cargar proyectos:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchObras();
   }, [getProjects]);
+
+   if (loading) {
+    return <div className="flex items-center justify-center h-[650px]">
+      <p className="text-xl font-medium text-primary">Cargando obras...</p>
+    </div>
+  }
   
 
   return (

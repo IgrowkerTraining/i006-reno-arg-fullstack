@@ -14,10 +14,10 @@ class Catalog {
   static async getPlanningStructure() {
     const sql = `
       SELECT 
-        te.id_tipo_etapa, 
-        te.nombre AS etapa_nombre, 
-        tt.id_tipo_tarea, 
-        tt.nombre AS tarea_nombre
+        te.id_tipo_etapa as id_stage, 
+        te.nombre AS stage_name, 
+        tt.id_tipo_tarea as id_task, 
+        tt.nombre AS task_name
       FROM TIPO_ETAPA te
       LEFT JOIN TIPO_TAREA tt ON te.id_tipo_etapa = tt.id_tipo_etapa
       ORDER BY te.id_tipo_etapa, tt.id_tipo_tarea;

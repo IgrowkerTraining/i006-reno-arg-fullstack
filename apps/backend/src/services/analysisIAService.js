@@ -28,10 +28,11 @@ class AnalysisIAService {
         //     throw new Error(`AI_SERVICE_ERROR: ${response.status} ${response.statusText}`);
         // }
         return await response.json();
-    } catch(error) {
-        console.error("Error en callExternalAI:", error.message);
-        throw new Error("AI_SERVICE_ERROR: conection failed");
+    } catch (error) {
+        console.error("Error en la conexión:", error.message);
+        throw error;
     }
+}
 
 }
 
