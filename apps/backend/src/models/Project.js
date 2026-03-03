@@ -180,55 +180,124 @@ WHERE p.id_proyecto = $1
     console.error("Error countArtActive:", error.message);
   }
 
-  static async getMonthlyDataForAI(projectId, month, year) {
+  static async getSnapshotDataForAI(projectId, month, year) {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
     const sql = `
-        SELECT 
-            p.codigo AS project_code, 
-            p.nombre AS project_name,
-            u_resp.nombre AS responsible_technician,
-            ra.id_registro_avance AS report_id,
-            TO_CHAR(ra.fecha, 'DD-MM-YYYY') AS report_date,
-            u_sup.nombre AS supervisor_name,
-            te.nombre AS stage_name,
-            tt.nombre AS task_name,
-            o.nombre AS trade_name,
-            ms.descripcion AS safety_measure,
-            ca.nombre_entidad_art AS art_name,
-            vt.estado AS validation_status,
-            vt.comentario AS validation_comment
-        FROM proyecto p
-        JOIN usuario u_resp ON p.id_responsable = u_resp.id_usuario
-        JOIN registro_avance ra ON p.id_proyecto = ra.id_proyecto
-        JOIN usuario u_sup ON ra.id_supervisor = u_sup.id_usuario
-        LEFT JOIN detalle_avance_tarea dat ON ra.id_registro_avance = dat.id_registro_avance
-        LEFT JOIN tarea t ON dat.id_avance_tarea = t.id_tarea
-        LEFT JOIN tipo_tarea tt ON t.id_tipo_tarea = tt.id_tipo_tarea
-        LEFT JOIN etapa e ON t.id_etapa = e.id_etapa
-        LEFT JOIN tipo_etapa te ON e.id_tipo_etapa = te.id_tipo_etapa
-        LEFT JOIN registro_oficio ro ON ra.id_registro_avance = ro.id_reg_oficio
-        LEFT JOIN oficio o ON ro.id_oficio = o.id_oficio
-        LEFT JOIN registro_seguridad rs ON ra.id_registro_avance = rs.id_registro_avance
-        LEFT JOIN medidas_seguridad ms ON rs.id_medida_seg = ms.id_medidas_seg
-        LEFT JOIN cat_art ca ON p.id_art = ca.id_cat_art
-        LEFT JOIN validacion_tecnica vt ON ra.id_registro_avance = vt.id_registro_avance
-        WHERE p.id_proyecto = $1 
-          AND ra.fecha BETWEEN $2 AND $3
-        ORDER BY ra.fecha ASC, te.nombre ASC;
-    `;
+    SELECT
+      p.codigo AS project_code,
+      p.nombre AS project_name,
+      u_resp.nombre AS responsible_technician,
+      ra.id_registro_avance AS report_id,
+      TO_CHAR(ra.fecha, 'DD-MM-YYYY') AS report_date,
+      u_sup.nombre AS supervisor_name,
+      te.nombre AS stage_name,
+      e.progreso AS stage_progress,
+      tt.nombre AS task_name,
+      o.nombre AS trade_name,
+      ms.descripcion AS safety_measure,
+      ca.nombre_entidad_art AS art_name,
+      vt.estado AS validation_status,
+      vt.comentario AS validation_comment
+    FROM proyecto p
+    JOIN usuario u_resp ON p.id_responsable = u_resp.id_usuario
+    JOIN registro_avance ra ON p.id_proyecto = ra.id_proyecto
+    JOIN usuario u_sup ON ra.id_supervisor = u_sup.id_usuario
+    LEFT JOIN detalle_avance_tarea dat ON ra.id_registro_avance = dat.id_registro_avance
+    LEFT JOIN tarea t ON dat.id_avance_tarea = t.id_tarea
+    LEFT JOIN tipo_tarea tt ON t.id_tipo_tarea = tt.id_tipo_tarea
+    LEFT JOIN etapa e ON t.id_etapa = e.id_etapa
+    LEFT JOIN tipo_etapa te ON e.id_tipo_etapa = te.id_tipo_etapa
+    LEFT JOIN registro_oficio ro ON ra.id_registro_avance = ro.id_reg_oficio
+    LEFT JOIN oficio o ON ro.id_oficio = o.id_oficio
+    LEFT JOIN registro_seguridad rs ON ra.id_registro_avance = rs.id_registro_avance
+    LEFT JOIN medidas_seguridad ms ON rs.id_medida_seg = ms.id_medidas_seg
+    LEFT JOIN cat_art ca ON p.id_art = ca.id_cat_art
+    LEFT JOIN validacion_tecnica vt ON ra.id_registro_avance = vt.id_registro_avance
+    WHERE p.id_proyecto = $1 
+      AND ra.fecha BETWEEN $2 AND $3
+    ORDER BY ra.fecha ASC, te.nombre ASC;
+  `;
 
     const rows = await db.any(sql, [projectId, startDate, endDate]);
 
     if (!rows || rows.length === 0) return null;
 
-    return this._formatMonthlyJSON(rows, startDate, endDate);
+    return this._formatSnapshotJSON(rows, startDate, endDate);
   }
-static _formatMonthlyJSON(rows, start, end) {
+
+  static _formatSnapshotJSON(rows, startDate, endDate) {
+    if (!rows || rows.length === 0) return null;
+
+    const lastRow = rows[rows.length - 1];
+    const lastReportId = lastRow.report_id;
+    const lastReportRows = rows.filter(r => r.report_id === lastReportId);
+
+    // 1. Corregimos el formato de fecha: de DD-MM-YYYY a YYYY-MM-DD
+    const formatDate = (dateStr) => {
+        if (!dateStr) return null;
+        const [day, month, year] = dateStr.split('-');
+        return `${year}-${month}-${day}`;
+    };
+
+    const fechaISO = formatDate(lastRow.report_date);
+
+    // 2. Corregimos el código del proyecto para que sea RENO-AR-XXXX
+    // Si tu código es RENO-ARG-2026-3, lo transformamos a RENO-AR-2026-003
+    const fixProjectCode = (code) => {
+        const parts = code.split('-');
+        const lastPart = parts[parts.length - 1].padStart(3, '0');
+        return `RENO-AR-2026-${lastPart}`;
+    };
+
+    const tareas = [...new Set(lastReportRows.map(r => r.task_name).filter(Boolean))];
+    const oficios = [...new Set(lastReportRows.map(r => r.trade_name).filter(Boolean))];
+    const medidas = [...new Set(lastReportRows.map(r => r.safety_measure).filter(Boolean))];
+
+    return {
+        project: {
+            codigo: fixProjectCode(lastRow.project_code),
+            nombre: lastRow.project_name,
+            responsable_tecnico: lastRow.responsible_technician
+        },
+        periodo: {
+            desde: startDate,
+            hasta: endDate    
+        },
+        etapas: {
+            nombre: lastRow.stage_name || "Obra gruesa",
+            estado: lastRow.stage_status || "EN_CURSO",
+            avance_estimado: lastRow.stage_progress || 0
+        },
+        registros_avance: {
+            fecha: fechaISO,
+            supervisor: lastRow.supervisor_name,
+            tareas_ejecutadas: tareas.length > 0 ? tareas : ["No seleccionaron tareas"],
+            oficios_activos: oficios.length > 0 ? oficios : ["No seleccionaron oficios"],
+            porcentaje_avance: lastRow.stage_progress || 0
+        },
+        medidas_seguridad: {
+            fecha: fechaISO,
+            implementadas: medidas.length > 0 ? medidas : ["No seleccionaron medidas de seguridad"],
+            cobertura_art: {
+                entidad: lastRow.art_name || "No especificada",
+                vigencia: lastRow.art_name ? "Activa" : "Vencida"
+            }
+        },
+        validaciones_tecnicas: {
+            fecha: fechaISO, // <--- Fecha corregida
+            estado: lastRow.validation_status || "EN_CURSO",
+            etapa: lastRow.stage_name || "Obra gruesa",
+            responsable: lastRow.responsible_technician
+        }
+    };
+}
+
+  static _formatMonthlyJSON(rows, start, end) {
     const context = {
       proyecto: {
-        codigo: rows[0].project_code, 
+        codigo: rows[0].project_code,
         nombre: rows[0].project_name,
         responsable_tecnico: rows[0].responsible_technician
       },
@@ -293,6 +362,7 @@ static _formatMonthlyJSON(rows, start, end) {
 
     return context;
   }
+  
 
 }
 
