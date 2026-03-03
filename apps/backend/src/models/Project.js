@@ -190,7 +190,7 @@ WHERE p.id_proyecto = $1
             p.nombre AS project_name,
             u_resp.nombre AS responsible_technician,
             ra.id_registro_avance AS report_id,
-            ra.fecha AS report_date,
+            TO_CHAR(ra.fecha, 'DD-MM-YYYY') AS report_date,
             u_sup.nombre AS supervisor_name,
             te.nombre AS stage_name,
             tt.nombre AS task_name,
@@ -225,13 +225,12 @@ WHERE p.id_proyecto = $1
 
     return this._formatMonthlyJSON(rows, startDate, endDate);
   }
-
-  static _formatMonthlyJSON(rows, start, end) {
+static _formatMonthlyJSON(rows, start, end) {
     const context = {
       proyecto: {
-        codigo: rows[0].proyecto_codigo,
-        nombre: rows[0].proyecto_nombre,
-        responsable_tecnico: rows[0].responsable_tecnico
+        codigo: rows[0].project_code, 
+        nombre: rows[0].project_name,
+        responsable_tecnico: rows[0].responsible_technician
       },
       periodo: { desde: start, hasta: end },
       registros_avance: []
@@ -240,46 +239,45 @@ WHERE p.id_proyecto = $1
     const reportsMap = new Map();
 
     rows.forEach(row => {
-      if (!reportsMap.has(row.id_reporte)) {
-        reportsMap.set(row.id_reporte, {
-          fecha: row.fecha,
-          supervisor: row.supervisor_nombre,
+      if (!reportsMap.has(row.report_id)) {
+        reportsMap.set(row.report_id, {
+          fecha: row.report_date,
+          supervisor: row.supervisor_name,
           actividad_por_etapa: [],
           recursos_y_seguridad: {
             oficios_activos: new Set(),
             medidas_seguridad_implementadas: new Set(),
-            art_vigente: row.art_nombre || "No especificada"
+            art_vigente: row.art_name || "No especificada"
           },
           validaciones_tecnicas: []
         });
       }
 
-      const report = reportsMap.get(row.id_reporte);
+      const report = reportsMap.get(row.report_id);
 
-      if (row.etapa_nombre) {
-        let etapa = report.actividad_por_etapa.find(e => e.etapa === row.etapa_nombre);
+      if (row.stage_name) {
+        let etapa = report.actividad_por_etapa.find(e => e.etapa === row.stage_name);
         if (!etapa) {
-          etapa = { etapa: row.etapa_nombre, tareas_ejecutadas: new Set() };
+          etapa = { etapa: row.stage_name, tareas_ejecutadas: new Set() };
           report.actividad_por_etapa.push(etapa);
         }
-        etapa.tareas_ejecutadas.add(row.tarea_nombre);
+        if (row.task_name) etapa.tareas_ejecutadas.add(row.task_name);
       }
 
-      if (row.oficio_nombre) report.recursos_y_seguridad.oficios_activos.add(row.oficio_nombre);
-      if (row.medida_seguridad) report.recursos_y_seguridad.medidas_seguridad_implementadas.add(row.medida_seguridad);
+      if (row.trade_name) report.recursos_y_seguridad.oficios_activos.add(row.trade_name);
+      if (row.safety_measure) report.recursos_y_seguridad.medidas_seguridad_implementadas.add(row.safety_measure);
 
-      if (row.validacion_estado) {
-        const yaExiste = report.validaciones_tecnicas.some(v => v.comentario_supervisor === row.validacion_comentario);
+      if (row.validation_status) {
+        const yaExiste = report.validaciones_tecnicas.some(v => v.comentario_supervisor === row.validation_comment);
         if (!yaExiste) {
           report.validaciones_tecnicas.push({
-            etapa_validada: row.etapa_nombre,
-            estado: row.validacion_estado,
-            comentario_supervisor: row.validacion_comentario
+            etapa_validada: row.stage_name,
+            estado: row.validation_status,
+            comentario_supervisor: row.validation_comment
           });
         }
       }
     });
-
     context.registros_avance = Array.from(reportsMap.values()).map(r => ({
       ...r,
       actividad_por_etapa: r.actividad_por_etapa.map(e => ({
