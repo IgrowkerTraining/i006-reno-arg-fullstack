@@ -53,8 +53,9 @@ const MisObras: React.FC = () => {
               titulo={obra.name}
               ubicacion={obra.location}
               fechaInicio={obra.registrationDate}
-              artStatus="ok"
-              seguridadStatus="ok"
+              artStatus={obra.config?.artCoverageId ? "ok" : "warning"}
+               seguridadStatus={"ok"}
+              //seguridadStatus={obra.config?.safetyCoverageId ? "ok" : "warning"}
               progreso={45}
               responsable={obra.manager?.name || "Sin responsable asignado"}
               matricula={obra.manager?.license || "Sin matrícula"}

@@ -44,4 +44,66 @@ const AIAnalysisController = require('../controllers/analysisIaController');
 
 router.post('/generate/:projectId', AIAnalysisController.create);
 
+/**
+ * @swagger
+ * /api/analysis-ia/history/{projectId}:
+ *   get:
+ *     summary: Obtener el historial de análisis de un proyecto
+ *     tags: [ReportsAI]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lista de análisis recuperada con éxito
+ */
+router.get('/history/:projectId', AIAnalysisController.getHistory);
+
+/**
+ * @swagger
+ * /api/analysis-ia:
+ *   get:
+ *     summary: Recuperar todos los análisis del sistema
+ *     description: Retorna una lista completa de todos los informes de IA generados para cualquier proyecto.
+ *     tags: [ReportsAI]
+ *     responses:
+ *       200:
+ *         description: Lista obtenida correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 count: { type: integer }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/AnalysisIAResponse'
+ */
+router.get('/', AIAnalysisController.getAllAnalyses);
+
+/**
+ * @swagger
+ * /api/analysis-ia/{id}:
+ *   get:
+ *     summary: Detalle de un análisis específico
+ *     tags: [ReportsAI]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Objeto de análisis individual
+ *       404:
+ *         description: No se encontró el análisis
+ */
+router.get('/:id', AIAnalysisController.getAnalysisById);
+
 module.exports = router;

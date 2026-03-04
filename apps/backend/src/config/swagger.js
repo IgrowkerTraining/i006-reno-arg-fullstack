@@ -32,7 +32,7 @@ const options = {
                         password: {
                             type: 'string',
                             format: 'password',
-                            example: 'password123',
+                            example: '12345678',
                         },
                     },
                 },

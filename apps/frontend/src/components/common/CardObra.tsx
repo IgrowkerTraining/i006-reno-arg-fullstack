@@ -12,8 +12,8 @@ interface CardObraProps {
   titulo: string;
   ubicacion: string;
   fechaInicio: string;
-  artStatus: "ok" | "warning" | "error";
-  seguridadStatus: "ok" | "warning" | "error";
+  artStatus: "ok" | "warning" | "error" | "Revisar";
+  seguridadStatus: "ok" | "warning" | "error" | "Revisar";
   progreso: number;
   responsable: string;
   matricula: string;
