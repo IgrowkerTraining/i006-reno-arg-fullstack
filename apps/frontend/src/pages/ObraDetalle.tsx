@@ -5,8 +5,10 @@ import PlaceholderScreen from "../components/common/PlaceholderScreen";
 import { ROUTE_BUILDERS } from "../constants/routes";
 import { api } from "../services/api";
 import { Card } from "../components/common/Card";
-import { MapPin } from "lucide-react";
+import { Hammer, MapPin } from "lucide-react";
 import { Button } from "../components/common/Button";
+import { log } from "console";
+import { formatDate } from "../utils/formateDate";
 
 const ObraDetalle: React.FC = () => {
   const { obraId } = useParams<string>();
@@ -38,22 +40,29 @@ const ObraDetalle: React.FC = () => {
     </div>
   }
 
+  console.log(project);
+
+
   return (
     <>
       {project ? (
         <>
+          <div className="flex justify-start mb-4">
+            <Button variant="ghost" className="mt-4 text-md" onClick={() => window.history.back()}> ← Volver a Mis obras</Button>
+          </div>
           <div className="flex flex-col overflow-hidden h-[650px]">
             <Card className="p-10 border border-gray-300 rounded-2xl shadow-md min-h-full overflow-y-auto">
-              <h2>Detalle de obra ID # {obraId}</h2>
-              <hr className="my-2 border-secondary" />
-              <h3 className="text-xl font-semibold">{project.code}</h3>
+              <div className="flex items-center gap-4 mb-4">
+                <h3 className="text-sm font-semibold bg-accent rounded-full px-4 py-2 w-fit">{project.code}</h3>
+                <span>Inicio de obra: {formatDate(project.registrationDate)}</span>
+              </div>
               <h1 className="text-3xl font-bold my-4">{project.name}</h1>
-              <p className="mb-4 flex items-center"><MapPin className="inline mr-2" />{project.location}</p>
-              <p className="mb-4 flex items-center">Superficie: {project.surfaceM2}m2</p>
+              <p className="mb-4 flex items-center text-sm"><MapPin className="inline mr-2 w-4 h-4" />{project.location} | <span className="ml-2">Superficie: {project.surfaceM2}m2</span></p>
+              <p >Responsable técnico: {project.manager.name} <span>{project.manager.license}</span></p>
+              <h2 className="text-xl font-semibold mb-4"><Hammer className="inline mr-2" />Registro de ejecución</h2>
+              <hr className="mb-6" />
               <Card className=" p-4 rounded-lg border border-neutro-3">
                 <h4 className="text-lg font-semibold mb-2">Responsable técnico</h4>
-                <p className="">{project.manager.name}</p>
-                <p className="">{project.manager.license}</p>
               </Card>
               <Card className=" p-4 rounded-lg border border-neutro-3 my-6">
                 <h4 className="text-lg font-semibold mt-4">Etapas de obra</h4>
@@ -72,9 +81,6 @@ const ObraDetalle: React.FC = () => {
                 ))}
               </Card>
             </Card>
-          </div>
-          <div className="flex justify-end mt-4">
-            <Button variant="outline" className="mt-4 text-sm" onClick={() => window.history.back()}> ← Volver a Mis obras</Button>
           </div>
         </>) : (
         <p>Obra no encontrada </p>
