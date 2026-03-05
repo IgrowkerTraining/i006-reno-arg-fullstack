@@ -53,6 +53,23 @@ class ReportController {
             return next(err);
         }
     }
+    static async getReportsByProject(req, res, next) {
+        try {
+            const { projectId } = req.params;
+
+            // Llamamos al Service
+            const reports = await ReportService.getReportsByProjectId(projectId);
+
+            return res.status(200).json({
+                success: true,
+                count: reports.length,
+                data: reports
+            });
+        } catch (error) {
+            console.error("Error en ReportController:", error);
+            next(error);
+        }
+    }
 }
 
 module.exports = ReportController;

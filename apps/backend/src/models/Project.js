@@ -234,21 +234,19 @@ WHERE p.id_proyecto = $1
     const lastReportId = lastRow.report_id;
     const lastReportRows = rows.filter(r => r.report_id === lastReportId);
 
-    // 1. Corregimos el formato de fecha: de DD-MM-YYYY a YYYY-MM-DD
     const formatDate = (dateStr) => {
-        if (!dateStr) return null;
-        const [day, month, year] = dateStr.split('-');
-        return `${year}-${month}-${day}`;
+      if (!dateStr) return null;
+      const [day, month, year] = dateStr.split('-');
+      return `${year}-${month}-${day}`;
     };
 
     const fechaISO = formatDate(lastRow.report_date);
 
-    // 2. Corregimos el código del proyecto para que sea RENO-AR-XXXX
-    // Si tu código es RENO-ARG-2026-3, lo transformamos a RENO-AR-2026-003
+
     const fixProjectCode = (code) => {
-        const parts = code.split('-');
-        const lastPart = parts[parts.length - 1].padStart(3, '0');
-        return `RENO-AR-2026-${lastPart}`;
+      const parts = code.split('-');
+      const lastPart = parts[parts.length - 1].padStart(3, '0');
+      return `RENO-AR-2026-${lastPart}`;
     };
 
     const tareas = [...new Set(lastReportRows.map(r => r.task_name).filter(Boolean))];
@@ -256,43 +254,43 @@ WHERE p.id_proyecto = $1
     const medidas = [...new Set(lastReportRows.map(r => r.safety_measure).filter(Boolean))];
 
     return {
-        project: {
-            codigo: fixProjectCode(lastRow.project_code),
-            nombre: lastRow.project_name,
-            responsable_tecnico: lastRow.responsible_technician
-        },
-        periodo: {
-            desde: startDate,
-            hasta: endDate    
-        },
-        etapas: {
-            nombre: lastRow.stage_name || "Obra gruesa",
-            estado: lastRow.stage_status || "EN_CURSO",
-            avance_estimado: lastRow.stage_progress || 0
-        },
-        registros_avance: {
-            fecha: fechaISO,
-            supervisor: lastRow.supervisor_name,
-            tareas_ejecutadas: tareas.length > 0 ? tareas : ["No seleccionaron tareas"],
-            oficios_activos: oficios.length > 0 ? oficios : ["No seleccionaron oficios"],
-            porcentaje_avance: lastRow.stage_progress || 0
-        },
-        medidas_seguridad: {
-            fecha: fechaISO,
-            implementadas: medidas.length > 0 ? medidas : ["No seleccionaron medidas de seguridad"],
-            cobertura_art: {
-                entidad: lastRow.art_name || "No especificada",
-                vigencia: lastRow.art_name ? "Activa" : "Vencida"
-            }
-        },
-        validaciones_tecnicas: {
-            fecha: fechaISO, // <--- Fecha corregida
-            estado: lastRow.validation_status || "EN_CURSO",
-            etapa: lastRow.stage_name || "Obra gruesa",
-            responsable: lastRow.responsible_technician
+      project: {
+        codigo: fixProjectCode(lastRow.project_code),
+        nombre: lastRow.project_name,
+        responsable_tecnico: lastRow.responsible_technician
+      },
+      periodo: {
+        desde: startDate,
+        hasta: endDate
+      },
+      etapas: {
+        nombre: lastRow.stage_name || "Obra gruesa",
+        estado: lastRow.stage_status || "EN_CURSO",
+        avance_estimado: lastRow.stage_progress || 0
+      },
+      registros_avance: {
+        fecha: fechaISO,
+        supervisor: lastRow.supervisor_name,
+        tareas_ejecutadas: tareas.length > 0 ? tareas : ["No seleccionaron tareas"],
+        oficios_activos: oficios.length > 0 ? oficios : ["No seleccionaron oficios"],
+        porcentaje_avance: lastRow.stage_progress || 0
+      },
+      medidas_seguridad: {
+        fecha: fechaISO,
+        implementadas: medidas.length > 0 ? medidas : ["No seleccionaron medidas de seguridad"],
+        cobertura_art: {
+          entidad: lastRow.art_name || "No especificada",
+          vigencia: lastRow.art_name ? "Activa" : "Vencida"
         }
+      },
+      validaciones_tecnicas: {
+        fecha: fechaISO,
+        estado: lastRow.validation_status || "EN_CURSO",
+        etapa: lastRow.stage_name || "Obra gruesa",
+        responsable: lastRow.responsible_technician
+      }
     };
-}
+  }
 
   static _formatMonthlyJSON(rows, start, end) {
     const context = {
@@ -362,7 +360,17 @@ WHERE p.id_proyecto = $1
 
     return context;
   }
-  
+  static async findByName(name) {
+    const query = `
+        SELECT * FROM PROYECTO 
+        WHERE nombre ILIKE $1
+        ORDER BY nombre ASC
+    `;
+    const params = [`%${name}%`];
+
+    const results = await db.any(query, params);
+    return results.map(row => new Project(row));
+  }
 
 }
 

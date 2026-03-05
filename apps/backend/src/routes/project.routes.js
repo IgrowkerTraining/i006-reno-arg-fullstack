@@ -10,28 +10,39 @@ router.get('/my-projects', verifyToken, ProjectController.getUserProjects);
  * @swagger
  * /api/projects:
  *   get:
- *     summary: Obtener todos los proyectos
+ *     summary: Obtener o buscar proyectos
+ *     description: Retorna todos los proyectos del usuario. Si se proporciona el parámetro 'name', filtra por coincidencia.
  *     tags: [Projects]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Nombre o parte del nombre para filtrar la búsqueda
+ *         example: "Reforma"
  *     responses:
  *       200:
- *         description: Lista de proyectos obtenida correctamente
+ *         description: Lista de proyectos (filtrada o completa)
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Proyecto'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 5
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Proyecto'
  *       401:
- *         description: No autorizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               message: Token inválido, expirado o no proporcionado
- *               status: 401
+ *         $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/', verifyToken, ProjectController.getAllProjects);
 
@@ -111,6 +122,9 @@ router.get('/:id', verifyToken, ProjectController.getProjectById);
  *               status: 400
  */
 router.post('/', verifyToken, ProjectController.createProject);
+
+
+
 
 router.patch('/:id/art', verifyToken, ProjectController.updateProjectArt);
 
