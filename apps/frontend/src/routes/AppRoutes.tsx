@@ -47,8 +47,14 @@ export const AppRoutes: React.FC = () => {
           </PublicRoute>
         }
       />
-      <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
-
+      <Route
+        path={ROUTES.DASHBOARD}
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Home />} />
         <Route path={ROUTES.MIS_OBRAS} element={<MisObras />} />
         <Route path={ROUTES.MIS_OBRAS_NUEVA} element={<NuevaObra />} />
@@ -57,11 +63,10 @@ export const AppRoutes: React.FC = () => {
         <Route path={ROUTES.OBRA_REGISTRO_SEGURIDAD} element={<RegistroSeguridad />} />
         <Route path={ROUTES.OBRA_REGISTRO_FINALIZAR} element={<RegistroFinalizar />} />
         <Route path={ROUTES.REPORTE_IA} element={<ReporteIA />} />
-
       </Route>
 
       <Route path={ROUTES.HOME} element={<RootRedirect />} />
-      <Route path="/login" element={<NotFound />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
