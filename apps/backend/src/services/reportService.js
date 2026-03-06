@@ -32,5 +32,16 @@ class ReportService {
         return await Report.getAllReports();
     }
 
+    static async getReportsByProjectId(projectId) {
+        
+        const reports = await Report.findByProjectId(projectId);
+        
+        if (!reports || reports.length === 0) {
+            return [];
+        }
+
+        return reports;
+    }
+
 }
 module.exports = ReportService;

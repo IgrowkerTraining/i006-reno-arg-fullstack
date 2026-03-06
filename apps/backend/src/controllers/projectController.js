@@ -1,10 +1,29 @@
 const ProjectService = require('../services/projectService');
 
 class ProjectController {
-    static async getAllProjects(_req, res, next) {
+    static async getAllProjects(req, res, next) {
         try {
+
+            const { name } = req.query;
+
+            if (name) {
+
+                const projects = await ProjectService.searchProjectByName(name);
+                return res.status(200).json({
+                    success: true,
+                    count: projects.length,
+                    data: projects
+                });
+            }
+
+
             const projects = await ProjectService.getAllProjects();
-            return res.status(200).json(projects);
+            return res.status(200).json({
+                success: true,
+                count: projects.length,
+                data: projects
+            });
+
         } catch (error) {
             return next(error);
         }
@@ -66,6 +85,21 @@ class ProjectController {
 
             return res.status(200).json(projects);
 
+        } catch (error) {
+            next(error);
+        }
+    }
+    static async getProjectByName(req, res, next) {
+        try {
+            const { name } = req.query;
+
+            const projects = await ProjectService.searchProjectByName(name);
+
+            console.log("Buscando proyecto con el término:", name);
+            return res.status(200).json({
+                success: true,
+                data: projects
+            });
         } catch (error) {
             next(error);
         }

@@ -32,7 +32,7 @@ const options = {
                         password: {
                             type: 'string',
                             format: 'password',
-                            example: 'password123',
+                            example: '12345678',
                         },
                     },
                 },
@@ -369,6 +369,22 @@ const options = {
                         },
                     },
                 },
+                ProjectReportRequest: {
+                    type: 'object',
+                    required: ['month', 'year'],
+                    properties: {
+                        month: {
+                            type: 'string',
+                            example: '04',
+                            description: 'Mes del reporte (MM)'
+                        },
+                        year: {
+                            type: 'string',
+                            example: '2026',
+                            description: 'Año del reporte (YYYY)'
+                        }
+                    }
+                },
                 CatalogSystem: {
                     type: 'object',
                     properties: {
@@ -394,7 +410,7 @@ const options = {
                                 type: 'object',
                                 properties: {
                                     id: { type: 'integer', example: 10 },
-                                    name: { type: 'string', example: 'Remoción de escombros' } 
+                                    name: { type: 'string', example: 'Remoción de escombros' }
                                 }
                             }
                         }
@@ -433,6 +449,41 @@ const options = {
                         }
                     }
                 },
+                AnalysisIAResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        analysis: {
+                            type: 'object',
+                            properties: {
+                                analisis_id: { type: 'string', format: 'uuid', example: '769db1e2-cb28-4a72-b293-d682d774c30f' },
+                                status: { type: 'string', example: 'completed' },
+                                resultado: { $ref: '#/components/schemas/AIAnalysisResult' }
+                            }
+                        }
+                    }
+                },
+                AIAnalysisResult: {
+                    type: 'object',
+                    properties: {
+                        Proyecto: {
+                            type: 'object',
+                            properties: {
+                                Código: { type: 'string', example: 'RENO-AR-2026-003' },
+                                Nombre: { type: 'string', example: 'Reforma vivienda' },
+                                'Responsable Técnico': { type: 'string', example: 'Natasha' }
+                            }
+                        },
+                        'Período analizado': { type: 'string', example: '02/2026' },
+                        'Fecha de generación': { type: 'string', example: '27/02/2026' },
+                        'Resumen general del estado de la obra': { type: 'string' },
+                        'Ejecución y planificación': { type: 'string' },
+                        'Medidas de seguridad y cumplimiento': { type: 'string' },
+                        'Validaciones técnicas': { type: 'string' },
+                        'Observación general': { type: 'string' }
+                    }
+                },
+                /*
                 AIAnalysisResponse: {
                     type: 'object',
                     properties: {
@@ -506,6 +557,7 @@ const options = {
                         }
                     }
                 },
+                */
             },
         },
     },

@@ -4,6 +4,8 @@ import { Input } from "../components/common/Input";
 import { Button } from "../components/common/Button";
 import { api } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
+import { ROUTES } from "../constants/routes";
+import { validateLogin } from "../utils/validation";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -12,21 +14,39 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
+    const validation = validateLogin({ email: email.trim(), password: password.trim() });
+    if (!validation.isValid) {
+      const mappedErrors = validation.errors.reduce<Record<string, string>>((acc, current) => {
+        acc[current.field.toLowerCase()] = current.message;
+        return acc;
+      }, {});
+      setFieldErrors(mappedErrors);
+      return;
+    }
+
+    setFieldErrors({});
+    setIsLoading(true);
+
     try {
-      const response = await api.login({ email, password });
+      const response = await api.login({ email: email.trim(), password });
       login(response.user);
-      navigate("/dashboard");
+      navigate(ROUTES.DASHBOARD);
     } catch (err: any) {
-      setError(err.message || "Ocurrió un error. Por favor, intentá nuevamente.");
+      setError(err.message || "Ocurrió un error. Intentá nuevamente.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const clearFieldError = (field: string) => {
+    if (!fieldErrors[field]) return;
+    setFieldErrors((previous) => ({ ...previous, [field]: "" }));
   };
 
   return (
@@ -51,9 +71,7 @@ const Login: React.FC = () => {
               </svg>
             </div>
             <h1 className="text-3xl font-bold text-white mb-1">Bienvenid@</h1>
-            <p className="text-slate-400">
-              Ingresa tus credenciales para acceder a tu cuenta
-            </p>
+            <p className="text-slate-400">Ingresá tus credenciales para acceder.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,23 +102,12 @@ const Login: React.FC = () => {
               required
               disabled={isLoading}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
-                  />
-                </svg>
-              }
+              error={fieldErrors.email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+                clearFieldError("email");
+              }}
             />
 
             <Input
@@ -110,23 +117,12 @@ const Login: React.FC = () => {
               required
               disabled={isLoading}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z"
-                  />
-                </svg>
-              }
+              error={fieldErrors.password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+                clearFieldError("password");
+              }}
             />
 
             <div className="flex items-center justify-between">
@@ -154,7 +150,7 @@ const Login: React.FC = () => {
             <p className="text-neutro-2 text-sm">
               ¿Aún no tenés cuenta?{" "}
               <Link
-                to="/register"
+                to={ROUTES.REGISTER}
                 className="text-secondary hover:text-accent font-semibold transition-colors"
               >
                 Registrate

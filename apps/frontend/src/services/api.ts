@@ -168,14 +168,19 @@ export const api = {
     return request<DashboardStats>(API_ENDPOINTS.DASHBOARD.STATS);
   },
 
-  async getProjects(): Promise<any[]> {
-    return request<any[]>(API_ENDPOINTS.PROJECTS.BASE, {}, true);
-  },
+  async getProjects(name?: string): Promise<any[]> {
+  const endpoint = name 
+    ? `${API_ENDPOINTS.PROJECTS.BASE}?name=${encodeURIComponent(name)}` 
+    : API_ENDPOINTS.PROJECTS.BASE;
+
+  const response = await request<{ success: boolean; data: any[] }>(endpoint, {}, true);
+  return response.data;
+},
 
   async getMyProjects(): Promise<any[]> {
-    return request<any[]>(API_ENDPOINTS.PROJECTS.MY_PROJECTS, {}, true);
+  const response = await request<{ success: boolean; data: any[] }>(API_ENDPOINTS.PROJECTS.MY_PROJECTS, {}, true);
+  return response.data;
   },
-
   async getProjectById(projectId: string | number): Promise<any> {
     return request<any>(API_ENDPOINTS.PROJECTS.byId(projectId), {}, true);
   },

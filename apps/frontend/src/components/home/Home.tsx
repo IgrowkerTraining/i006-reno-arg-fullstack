@@ -9,7 +9,7 @@ import { getAIGreeting } from "@/src/services/service";
 import { api, DashboardStats } from "@/src/services/api";
 import { Card } from "../common/Card";
 import { formatDate } from "@/src/utils/formateDate";
-import { ROUTES } from "../../constants/routes";
+import { ROUTE_BUILDERS, ROUTES } from "../../constants/routes";
 import DropdownFilter from "./DropdownFilter";
 
 const DATA = [
@@ -156,7 +156,7 @@ const Home: React.FC = () => {
                   {items.map((item) => (
                     <React.Fragment key={item.id}>
                       <li >
-                        <Link to={ROUTES.OBRA_DETALLE.replace(":obraId", item.id.toString())} className="grid grid-cols-4 items-end gap-5">
+                        <Link to={ROUTE_BUILDERS.obraDetalle(item.id.toString())} className="grid grid-cols-4 items-end gap-5">
 
                           <div className="col-span-3 gap-3">
                             <p className="text-xs text-primary">

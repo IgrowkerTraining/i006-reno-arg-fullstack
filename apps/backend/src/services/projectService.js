@@ -96,6 +96,12 @@ static async getUserProjects(userId) {
 
         return projects;
     }
+
+    
+    static async searchProjectByName(name) {
+    if (!name) return [];
+    return await Project.findByName(name);
+}
 }
 
 module.exports = ProjectService;

@@ -126,4 +126,41 @@ router.get('/setup/:idProject', ReportController.getInitialData);
  */
 router.post('/', ReportController.createDailyReport);
 
+/**
+ * @swagger
+ * /api/reports/project/{projectId}:
+ *   get:
+ *     summary: Obtener historial de reportes de un proyecto
+ *     description: Retorna la lista de reportes diarios filtrados por el ID del proyecto, ordenados por fecha descendente.
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID único del proyecto
+ *     responses:
+ *       200:
+ *         description: Historial de reportes recuperado con éxito
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 count:
+ *                   type: integer
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/DailyReport'
+ *       401:
+ *         description: No autorizado
+ */
+router.get('/project/:projectId', ReportController.getReportsByProject);
+
 module.exports = router;

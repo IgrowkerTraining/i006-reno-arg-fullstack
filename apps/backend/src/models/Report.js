@@ -25,17 +25,17 @@ class Report {
         return new Report(result);
     }
 
-   static async saveFullReport(reportData, t) {
-    const reportHeader = await this.create(reportData, t);
+    static async saveFullReport(reportData, t) {
+        const reportHeader = await this.create(reportData, t);
 
-    await Promise.all([
-        this._insertTasks(t, reportHeader.id, reportData.selectedTasks),
-        this._insertTrades(t, reportHeader.id, reportData.selectedTrades),
-        this._insertSafety(t, reportHeader.id, reportData.safetyItems)
-    ]);
+        await Promise.all([
+            this._insertTasks(t, reportHeader.id, reportData.selectedTasks),
+            this._insertTrades(t, reportHeader.id, reportData.selectedTrades),
+            this._insertSafety(t, reportHeader.id, reportData.safetyItems)
+        ]);
 
-    return reportHeader;
-}
+        return reportHeader;
+    }
 
     static async getTasksForReport(idProject) {
         const sql = `
@@ -55,30 +55,27 @@ class Report {
         return this._formatTasksByStage(rows);
     }
 
-   static _formatTasksByStage(rows) {
-    return rows.reduce((acc, row) => {
-        // 1. Usamos row.id_stage (que es como viene del SQL)
-        let stage = acc.find(s => s.id_etapa === row.id_stage);
-        
-        if (!stage) {
-            stage = {
-                id_etapa: row.id_stage,
-                nombre_etapa: row.stage_name, // Antes decía etapa_nombre (error)
-                tareas: []
-            };
-            acc.push(stage);
-        }
+    static _formatTasksByStage(rows) {
+        return rows.reduce((acc, row) => {
+            let stage = acc.find(s => s.id_etapa === row.id_stage);
 
-        // 2. Usamos row.id_task y row.task_name
-        if (row.id_task) {
-            stage.tareas.push({
-                id_tarea: row.id_task,
-                nombre_tarea: row.task_name // Antes decía tarea_nombre (error)
-            });
-        }
-        return acc;
-    }, []);
-}
+            if (!stage) {
+                stage = {
+                    id_etapa: row.id_stage,
+                    nombre_etapa: row.stage_name,
+                    tareas: []
+                };
+                acc.push(stage);
+            }
+            if (row.id_task) {
+                stage.tareas.push({
+                    id_tarea: row.id_task,
+                    nombre_tarea: row.task_name
+                });
+            }
+            return acc;
+        }, []);
+    }
     static async _insertTasks(t, idReport, tasks) {
         if (!tasks || tasks.length === 0) return;
         const queries = tasks.map(idTarea =>
@@ -177,8 +174,19 @@ class Report {
     }
 
     static async countAll() {
-    const res = await db.one('SELECT COUNT(*) FROM registro_avance');
-    return parseInt(res.count);
+        const res = await db.one('SELECT COUNT(*) FROM registro_avance');
+        return parseInt(res.count);
+    }
+
+    static async findByProjectId(projectId) {
+    const query = `
+        SELECT * FROM REGISTRO_AVANCE 
+        WHERE id_proyecto = $1 
+        ORDER BY fecha DESC
+    `;
+    
+    const results = await db.any(query, [projectId]);
+    return results.map(row => new Report(row));
 }
 }
 

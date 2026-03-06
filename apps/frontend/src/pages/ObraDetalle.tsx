@@ -9,7 +9,7 @@ import { formatDate } from "../utils/formateDate";
 const ObraDetalle: React.FC = () => {
   const { obraId } = useParams<string>();
   const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate();
 
@@ -49,14 +49,14 @@ const ObraDetalle: React.FC = () => {
         /*  const project = await api.getProjectById(obraId); */
         const project = await api.getReportById(obraId);
         setProject(project);
+
       } catch {
         setProject(null);
-      } finally {
-        setLoading(false);
       }
     };
 
     loadProject();
+
   }, [obraId]);
 
   if (loading) {

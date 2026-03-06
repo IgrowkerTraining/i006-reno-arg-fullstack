@@ -16,17 +16,37 @@ class AnalysisIA {
 
         return new AnalysisIA(result);
     }
-    static async getLastByProject(projectId) {
-        const result = await db.oneOrNone(`
-            SELECT id_analisis, id_proyecto, fecha, contenido_json
-            FROM ANALISIS_IA
-            WHERE id_proyecto = $1
-            ORDER BY fecha DESC
-            LIMIT 1
-        `, [projectId]);
+    static async findAllByProject(projectId) {
+        const results = await db.any(`
+        SELECT * FROM ANALISIS_IA 
+        WHERE id_proyecto = $1 
+        ORDER BY fecha DESC
+    `, [projectId]);
+        return results.map(row => new AnalysisIA(row));
+    }
 
+    static async findById(id) {
+        const result = await db.oneOrNone(`
+        SELECT * FROM ANALISIS_IA 
+        WHERE id_analisis = $1
+    `, [id]);
         return result ? new AnalysisIA(result) : null;
     }
+static async getAllAnalysis() {
+    const results = await db.any(`SELECT * FROM ANALISIS_IA ORDER BY fecha DESC`);
+    
+    if (!results) return [];
+
+    return results.map(row => new AnalysisIA(row));
+}
+static async findById(id) {
+    const result = await db.oneOrNone(`
+        SELECT * FROM ANALISIS_IA 
+        WHERE id_analisis = $1
+    `, [id]);
+    
+    return result ? new AnalysisIA(result) : null;
+}
 }
 
 module.exports = AnalysisIA;
