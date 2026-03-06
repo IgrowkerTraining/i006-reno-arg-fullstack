@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 class User {
   
-  constructor({ id_usuario, nombre, apellido, email, contrasena, id_rol, rol }) {
+  constructor({ id_usuario, nombre, apellido, email, contrasena, id_rol, rol,matricula }) {
     this.id = id_usuario;
     this.name = nombre;
     this.lastName = apellido;
@@ -10,6 +10,7 @@ class User {
     this.password = contrasena;
     this.idRol = id_rol;
     this.rol = rol;
+    this.licenseNo = matricula;
   }
   toJSON() {
     const { password, ...userWithoutPassword } = this;
@@ -17,11 +18,11 @@ class User {
   }
 
   static async create(userData) {
-    const { name, lastName, email, password} = userData;
+    const { name, lastName, email, password, licenseNo } = userData;
     const idMouckUp = 2;
-    const sql = 'INSERT INTO USUARIO (nombre, apellido, email, contrasena, id_rol) VALUES ($1, $2, $3, $4, $5) RETURNING *';
+    const sql = 'INSERT INTO USUARIO (nombre, apellido, email, contrasena, id_rol, matricula) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
 
-    const data = await db.one(sql, [name , lastName, email, password, idMouckUp]);
+    const data = await db.one(sql, [name , lastName, email, password, idMouckUp, licenseNo]);
     return new User(data);
 }
 static async getAllUsers() {
@@ -33,7 +34,8 @@ static async getAllUsers() {
         u.email,
         u.contrasena,
         u.id_rol,
-        r.nombre AS rol
+        r.nombre AS rol,
+        u.matricula
       FROM USUARIO u
       INNER JOIN ROL r ON u.id_rol = r.id_rol
       ORDER BY u.id_usuario ASC;
@@ -45,15 +47,15 @@ static async getAllUsers() {
   }
 
  static async updateUser(id, userData) {
-    const { name, lastName, email, idRol } = userData;
+    const { name, lastName, email, idRol, licenseNo } = userData;
     const sql = `
       UPDATE USUARIO 
-      SET nombre = $1, apellido = $2, email = $3, id_rol = $4
-      WHERE id_usuario = $5
+      SET nombre = $1, apellido = $2, email = $3, id_rol = $4, matricula = $5
+      WHERE id_usuario = $6
       RETURNING *
     `;
     
-    const data = await db.one(sql, [name, lastName, email, idRol, id]);
+    const data = await db.one(sql, [name, lastName, email, idRol, licenseNo, id]);
     
     return User.findById(id); 
   }
@@ -83,7 +85,8 @@ static async getAllUsers() {
         u.email,
         u.contrasena,
         u.id_rol,
-        r.nombre AS rol
+        r.nombre AS rol,
+        u.matricula
       FROM USUARIO u
       INNER JOIN ROL r ON u.id_rol = r.id_rol
       WHERE u.email = $1;

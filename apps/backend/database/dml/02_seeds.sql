@@ -42,10 +42,10 @@ VALUES
 
 
 INSERT INTO TIPO_TAREA (id_tipo_etapa, nombre) VALUES 
-(1, 'Picado de pared'),
+(1, 'Picado de pared'), 
 (1, 'Retiro de aberturas'),
 (1, 'Levantamiento de piso'),
-(2, 'Levantamiento de tabique'),
+(2, 'Levantamiento de tabique'), 
 (2, 'Contrapiso'),
 (2, 'Carpetas'),
 (2, 'Refuerzo estructural'),

@@ -1,4 +1,5 @@
 const AnalysisIaService = require('../services/analysisIAService.js');
+const Helper = require('../utils/helper.js');
 // import AnalysisIaService from "../services/analysisIAService.js";
 
 class AnalysisIaController {
@@ -49,8 +50,9 @@ class AnalysisIaController {
                 error.status = 404;
                 return next(error);
             }
+            const formattedResult = Helper.transformKeysToSnakeCase(result);
             return res.status(201).json({
-                data: result
+                data: formattedResult
             });
 
         } catch (error) {
