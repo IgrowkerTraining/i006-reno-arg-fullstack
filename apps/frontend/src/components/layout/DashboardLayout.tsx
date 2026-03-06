@@ -8,7 +8,7 @@ export const DashboardLayout: React.FC = () => {
 const matchReporteIA = useMatch("/dashboard/reporte-ia");
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 1024px)");
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
 
     const handleChange = (e: MediaQueryListEvent) => {
       setIsMobile(e.matches);
@@ -25,7 +25,7 @@ const matchReporteIA = useMatch("/dashboard/reporte-ia");
 
   return (
     <div className={`flex min-h-screen ${matchReporteIA ? "bg-[#EEF8FA]" : ""}`}>
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} />
+      <Sidebar collapsed={finalCollapsed} setCollapsed={setCollapsed} isMobile={isMobile} />
       <main className="flex-1 overflow-auto pt-6 pr-6 lg:p-8">
         <Outlet />
       </main>
