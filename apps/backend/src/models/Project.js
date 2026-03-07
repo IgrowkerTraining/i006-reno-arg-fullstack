@@ -42,11 +42,22 @@ class Project {
   }
   static async getAll() {
     const sql = `
-      SELECT p.*, u.nombre as responsable_nombre 
-      FROM PROYECTO p
-      LEFT JOIN USUARIO u ON p.id_responsable = u.id_usuario
-      ORDER BY p.id_proyecto DESC;
-    `;
+      SELECT 
+            p.id_proyecto,
+            p.codigo,
+            p.nombre,
+            p.ubicacion,
+            p.superficie_m2,
+            p.fecha_registro,
+            p.id_sistema_constructivo,
+            p.id_art,
+            p.id_responsable,
+            u.nombre as responsable_nombre,
+            u.matricula as matricula_responsable
+        FROM PROYECTO p
+        INNER JOIN USUARIO u ON p.id_responsable = u.id_usuario
+        ORDER BY p.fecha_registro DESC
+    `;     
     const projects = await db.any(sql);
     return projects.map(p => new Project(p));
   }
@@ -67,9 +78,9 @@ class Project {
     const sql = `
       INSERT INTO PROYECTO (
         codigo, nombre, ubicacion, superficie_m2, 
-        id_responsable, id_sistema_constructivo, id_art, matricula_responsable
+        id_responsable, id_sistema_constructivo, id_art
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *;
     `;
     const params = [
@@ -80,7 +91,6 @@ class Project {
       projectData.id_responsable,
       projectData.id_sistema_constructivo,
       projectData.id_art || null,
-      projectData.matricula_responsable
     ];
 
     const result = await connection.one(sql, params);
@@ -224,74 +234,88 @@ WHERE p.id_proyecto = $1
 
     if (!rows || rows.length === 0) return null;
 
-    return this._formatSnapshotJSON(rows, startDate, endDate);
-  }
+    const snapshotData = this._formatSnapshotJSON(rows, startDate, endDate);
+    return snapshotData;
+  
 
-  static _formatSnapshotJSON(rows, startDate, endDate) {
+  }
+static _formatSnapshotJSON(rows, startDate, endDate) {
     if (!rows || rows.length === 0) return null;
 
-    const lastRow = rows[rows.length - 1];
-    const lastReportId = lastRow.report_id;
-    const lastReportRows = rows.filter(r => r.report_id === lastReportId);
-
     const formatDate = (dateStr) => {
-      if (!dateStr) return null;
-      const [day, month, year] = dateStr.split('-');
-      return `${year}-${month}-${day}`;
+        if (!dateStr) return null;
+        const [day, month, year] = dateStr.split('-');
+        return `${year}-${month}-${day}`;
     };
-
-    const fechaISO = formatDate(lastRow.report_date);
-
 
     const fixProjectCode = (code) => {
-      const parts = code.split('-');
-      const lastPart = parts[parts.length - 1].padStart(3, '0');
-      return `RENO-AR-2026-${lastPart}`;
+        const parts = code.split('-');
+        const lastPart = parts[parts.length - 1].padStart(3, '0');
+        return `RENO-AR-2026-${lastPart}`;
     };
 
-    const tareas = [...new Set(lastReportRows.map(r => r.task_name).filter(Boolean))];
-    const oficios = [...new Set(lastReportRows.map(r => r.trade_name).filter(Boolean))];
-    const medidas = [...new Set(lastReportRows.map(r => r.safety_measure).filter(Boolean))];
+    const reportsMap = new Map();
+
+    rows.forEach(row => {
+        if (!reportsMap.has(row.report_id)) {
+            reportsMap.set(row.report_id, {
+                fecha: formatDate(row.report_date),
+                supervisor: row.supervisor_name || "Sin asignar",
+                tareas_ejecutadas: new Set(),
+                oficios_activos: new Set(),
+                porcentaje_avance: row.stage_progress || 0
+            });
+        }
+
+        const report = reportsMap.get(row.report_id);
+        if (row.task_name) report.tareas_ejecutadas.add(row.task_name);
+        if (row.trade_name) report.oficios_activos.add(row.trade_name);
+    });
+
+    const registrosAvanceArray = Array.from(reportsMap.values()).map(r => ({
+        ...r,
+        tareas_ejecutadas: r.tareas_ejecutadas.size > 0 ? Array.from(r.tareas_ejecutadas) : ["Sin tareas registradas"],
+        oficios_activos: r.oficios_activos.size > 0 ? Array.from(r.oficios_activos) : ["Sin oficios registrados"]
+    }));
+
+    const lastRow = rows[rows.length - 1];
+    const todasLasMedidas = [...new Set(rows.map(r => r.safety_measure).filter(Boolean))];
+
+    const etapaSegura = lastRow.stage_name || "Etapa General";
+    const estadoSeguro = lastRow.validation_status || "PENDIENTE";
 
     return {
-      project: {
-        codigo: fixProjectCode(lastRow.project_code),
-        nombre: lastRow.project_name,
-        responsable_tecnico: lastRow.responsible_technician
-      },
-      periodo: {
-        desde: startDate,
-        hasta: endDate
-      },
-      etapas: {
-        nombre: lastRow.stage_name || "Obra gruesa",
-        estado: lastRow.stage_status || "EN_CURSO",
-        avance_estimado: lastRow.stage_progress || 0
-      },
-      registros_avance: {
-        fecha: fechaISO,
-        supervisor: lastRow.supervisor_name,
-        tareas_ejecutadas: tareas.length > 0 ? tareas : ["No seleccionaron tareas"],
-        oficios_activos: oficios.length > 0 ? oficios : ["No seleccionaron oficios"],
-        porcentaje_avance: lastRow.stage_progress || 0
-      },
-      medidas_seguridad: {
-        fecha: fechaISO,
-        implementadas: medidas.length > 0 ? medidas : ["No seleccionaron medidas de seguridad"],
-        cobertura_art: {
-          entidad: lastRow.art_name || "No especificada",
-          vigencia: lastRow.art_name ? "Activa" : "Vencida"
+        project: {
+            codigo: fixProjectCode(lastRow.project_code),
+            nombre: lastRow.project_name || "Proyecto sin nombre",
+            responsable_tecnico: lastRow.responsible_technician || "No asignado"
+        },
+        periodo: {
+            desde: startDate,
+            hasta: endDate
+        },
+        etapas: {
+            nombre: etapaSegura,
+            estado: estadoSeguro,
+            avance_estimado: lastRow.stage_progress || 0
+        },
+        registros_avance: registrosAvanceArray,
+        medidas_seguridad: {
+            fecha: formatDate(lastRow.report_date),
+            implementadas: todasLasMedidas.length > 0 ? todasLasMedidas : ["Uso de EPP básico"],
+            cobertura_art: {
+                entidad: lastRow.art_name || "No especificada",
+                vigencia: lastRow.art_name ? "Activa" : "No disponible"
+            }
+        },
+        validaciones_tecnicas: {
+            fecha: formatDate(lastRow.report_date),
+            estado: estadoSeguro,
+            etapa: etapaSegura,
+            responsable: lastRow.responsible_technician || "No asignado"
         }
-      },
-      validaciones_tecnicas: {
-        fecha: fechaISO,
-        estado: lastRow.validation_status || "EN_CURSO",
-        etapa: lastRow.stage_name || "Obra gruesa",
-        responsable: lastRow.responsible_technician
-      }
     };
-  }
-
+}
   static _formatMonthlyJSON(rows, start, end) {
     const context = {
       proyecto: {

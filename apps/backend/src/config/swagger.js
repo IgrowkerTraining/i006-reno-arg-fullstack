@@ -47,6 +47,7 @@ const options = {
                                 lastName: { type: 'string', example: 'Marco' },
                                 email: { type: 'string', example: 'test1@test.com' },
                                 idRol: { type: 'integer', example: 1 },
+                                licenseNo: { type: 'string', example: 'MAT-12345' },
                             },
                         },
                         token: {
@@ -173,7 +174,6 @@ const options = {
                         'superficie_m2',
                         'id_responsable',
                         'id_sistema_constructivo',
-                        'matricula_responsable',
                     ],
                     properties: {
                         nombre: { type: 'string', example: 'Reforma Oficinas Centrales' },
@@ -182,7 +182,6 @@ const options = {
                         id_responsable: { type: 'integer', example: 3 },
                         id_sistema_constructivo: { type: 'integer', example: 1 },
                         id_art: { type: 'integer', nullable: true, example: null },
-                        matricula_responsable: { type: 'string', example: 'MAT-9988' },
                         etapas: {
                             type: 'array',
                             items: {

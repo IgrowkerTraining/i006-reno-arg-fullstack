@@ -27,9 +27,9 @@ static async loginUser(email, password) {
       return null;
     }
     const token = jwt.sign(
-        { id: user.id, email: user.email, rol: user.idRol }, 
+        { id: user.id, email: user.email, rol: user.idRol, licenseNo: user.licenseNo }, 
         process.env.JWT_SECRET, 
-        { expiresIn: '30d' }
+        { expiresIn: '1d' }
     ); 
     return { 
         user: {
@@ -37,7 +37,8 @@ static async loginUser(email, password) {
             name: user.name,
             lastName: user.lastName,
             email: user.email,
-            idRol: user.idRol
+            idRol: user.idRol,
+            licenseNo: user.licenseNo
         }, 
         token 
     };
