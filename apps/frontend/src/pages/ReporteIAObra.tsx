@@ -6,50 +6,39 @@ import { Button } from "../components/common/Button";
 
 import { useRef } from "react";
 import { handleExportPDF } from "../utils/exportReport";
-import { useParams } from "react-router-dom";
-import { api } from "../services/api";
-
+import { useLocation, useParams } from "react-router-dom";
 
 const ReporteIA: React.FC = () => {
 
-   const { obraId } = useParams<string>();
-   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState<boolean>(false);
-
-/*   useEffect(() => {
-    if (!obraId) return;
-
-    const analysisByProject = async () => {
-      try {
-        setLoading(true);
-        const analysisGenerated = await api.generateAnalysis(4, 3, 2026 );
-        setAnalysis(analysisGenerated);
-      } catch {
-        setAnalysis(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    analysisByProject();
-  }, [obraId]); */
-
-  console.log({analysis});
+  const [dataAnalysis, setDataAnalysis] = useState(null)
   
-
   const reportRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const { analysis, month, year } = location.state || {};
+
+  useEffect(()=>{
+    if (analysis){
+      setDataAnalysis(analysis)
+    }  
+  },[])
 
 
-  if (!obraId) return <p>Cargando...</p>;
+  if (!analysis) {
+    return <p>No hay análisis disponible</p>;
+  }
+  console.log({dataAnalysis});
+
+
   return (
-     <div ref={reportRef}>
+    <div ref={reportRef}>
       <h3 className="flex items-center gap-2 text-secondary-plus font-bold text-2xl"><Flower size={20} /> ANÁLISIS ASISTIDO POR IA</h3>
       <header className="flex items-end gap-6 mt-4">
         <div>
-        <h2 className="font-bold text-2xl my-2">{analysis.codigo}</h2>
-        <h4 className="font-bold">{analysis.proyecto} - Periodo: {analysis.periodo}</h4>
+        <h2 className="font-bold text-2xl my-2">{}</h2>
+        <h4 className="font-bold">{} - Periodo: {month} | {year}</h4>
         </div>
-        <Button variant="outline" className="ml-auto" onClick={() => ""/* handleExportPDF({ reportRef, analysis } )*/} data-html2canvas-ignore="true"><Download size={20} className="mr-2" />Exportar PDF</Button>
+        <Button variant="outline" className="ml-auto" onClick={() =>""/*  handleExportPDF({ reportRef, analysis } ) */} data-html2canvas-ignore="true"><Download size={20} className="mr-2" />Exportar PDF</Button>
       </header>
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <Card className="flex flex-col gap-4 p-8 rounded-xl border-neutro-3 bg-white" >
@@ -84,9 +73,9 @@ const ReporteIA: React.FC = () => {
           <p className="">{analysis.observacion_general}</p>
         </Card>
       </section>
-    </div>
-  );
-};
+    </div> )}
+ 
+
 
 export default ReporteIA;
 

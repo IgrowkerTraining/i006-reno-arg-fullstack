@@ -227,6 +227,10 @@ export const api = {
     return request<any>(API_ENDPOINTS.REPORTS.byId(reportId));
   },
 
+  async getReportByProjectId(projectId: string | number): Promise<any> {
+    return request<any>(API_ENDPOINTS.REPORTS.project(projectId));
+  },
+
   async createDailyReport(data: CreateDailyReportPayload): Promise<any> {
     return request<any>(API_ENDPOINTS.REPORTS.BASE, {
       method: "POST",

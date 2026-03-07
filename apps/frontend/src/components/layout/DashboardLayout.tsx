@@ -24,9 +24,9 @@ const matchReporteIA = useMatch("/dashboard/reporte-ia");
   
 
   return (
-    <div className={`flex min-h-screen ${matchReporteIA ? "bg-[#EEF8FA]" : ""}`}>
+    <div className={`flex min-h-screen ${matchReporteIA ? "bg-[#EEF8FA]" : ""} overflow-hidden`}>
       <Sidebar collapsed={finalCollapsed} setCollapsed={setCollapsed} isMobile={isMobile} />
-      <main className="flex-1 overflow-auto pt-6 pr-6 lg:p-8">
+      <main className="flex-1 overflow-auto p-6 lg:pr-8 lg:py-8">
         <Outlet />
       </main>
     </div>
