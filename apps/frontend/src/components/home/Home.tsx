@@ -19,14 +19,6 @@ const DATA = [
   { key: "validatedProjects", icon: ListChecks, title: "Obras validadas", color: "accent-2" },
 ];
 
-/* const DATAHistorialMarzo = [
-  { title: "Ampliación planta alta - Local gastronómico", location: "San Isidro, CABA", workStage: "Obra gruesa", taks: "Levantamiento de tabiques", percent: "100%", date: "2026-03-10T00:00:00.000Z" }
-
-];
-const DATAHistorialFebrero = [
-  { title: "Reforma vivienda unifamiliar", location: "Barrio Caballito, CABA", workStage: "Instalaciones", taks: "Eléctrica", percent: "75%", date: "2026-02-14T00:00:00.000Z" },
-  { title: "Ampliación planta alta - Local gastronómico", location: "San Isidro, CABA", workStage: "Demolición y retiros", taks: "Picado de paredes, Retiro de abertura", percent: "100%", date: "2026-02-10T00:00:00.000Z" }
-]; */
 const DATAHistorial = [
   { id: 1, title: "Ampliación planta alta - Local gastronómico", location: "San Isidro, CABA", workStage: "Obra gruesa", taks: "Levantamiento de tabiques", percent: "100%", date: "2026-03-10T00:00:00.000Z" },
   { id: 2, title: "Reforma vivienda unifamiliar", location: "Barrio Caballito, CABA", workStage: "Instalaciones", taks: "Eléctrica", percent: "75%", date: "2026-02-14T00:00:00.000Z" },
@@ -37,7 +29,7 @@ const DATAHistorial = [
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [greeting, setGreeting] = useState<string>("Loading greeting...");
+  const [greeting, setGreeting] = useState<string>("Cargando saludo...");
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     activeProjects: 0,
     totalReports: 0,
