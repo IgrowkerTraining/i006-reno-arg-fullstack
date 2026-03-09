@@ -385,9 +385,9 @@ const NuevaObra: React.FC = () => {
     const etapas: CreateProjectPayload["etapas"] = Array.from(
       selectedTasksByStage.entries(),
     ).map(([stageId, taskIds]) => ({
-      id_tipo_etapa: stageId,
+      id_tipo_etapa: Number(stageId),
       fecha_inicio: startDate,
-      tareas: Array.from(taskIds),
+      tareas: Array.from(taskIds).map(id => Number(id)),
     }));
 
     if (!etapas.length) {
@@ -406,6 +406,7 @@ const NuevaObra: React.FC = () => {
       id_responsable: Number(user.id),
       matricula_responsable: "NO-0000",
       id_sistema_constructivo: getSystemId(),
+      id_art: formData.artProvider.trim() ? Number(formData.artProvider) : null,
       etapas,
     };
 
@@ -414,9 +415,9 @@ const NuevaObra: React.FC = () => {
 
     try {
       const createdProject = await api.createProject(payload);
-      const createdProjectId = createdProject?.id ?? createdProject?.id_proyecto;
-      const selectedArtId = Number(formData.artProvider);
-
+      //const createdProjectId = createdProject?.id ?? createdProject?.id_proyecto;
+      //const selectedArtId = Number(formData.artProvider);
+      /*
       if (createdProjectId && Number.isFinite(selectedArtId) && selectedArtId > 0) {
         try {
           await api.updateProjectArt(createdProjectId, selectedArtId);
@@ -426,7 +427,7 @@ const NuevaObra: React.FC = () => {
           );
         }
       }
-
+      */
       navigate(MIS_OBRAS_PATH);
     } catch (error) {
       const message =

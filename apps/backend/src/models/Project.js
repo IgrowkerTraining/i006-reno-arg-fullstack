@@ -1,112 +1,198 @@
 const db = require('../config/db');
 
 class Project {
-  constructor(projectData) {
-    this.id = projectData.id_proyecto;
-    this.code = projectData.codigo;
-    this.name = projectData.nombre;
-    this.location = projectData.ubicacion;
-    this.surfaceM2 = projectData.superficie_m2;
-    this.registrationDate = projectData.fecha_registro;
-    this.constructionSystemId = projectData.id_sistema_constructivo;
-    this.artCoverageId = projectData.id_art;
-    this.managerId = projectData.id_responsable;
-    this.managerName = projectData.responsable_nombre;
-    this.managerLicense = projectData.matricula_responsable;
+ constructor(data) {
+    this.id = data.id;
+    this.code = data.code;
+    this.name = data.name;
+    this.location = data.location;
+    this.surfaceM2 = parseFloat(data.surfaceM2) || 0;
+    this.registrationDate = data.registrationDate;
 
+    this.manager = data.manager || {
+      id: data.idResponsable,
+      name: data.managerName,
+      license: data.managerLicense
+    };
+    this.config = data.config || {
+      constructionSystemId: data.idSistemaConstructivo,
+      constructionSystemName: data.constructionSystemName,
+      artCoverageId: data.idArt,
+      artName: data.artName
+    };
+
+    this.stages = (data.stages || []).map(stage => ({
+      ...stage,
+      tasks: stage.tasks || [] 
+    }));
   }
   toJSON() {
-    const json = {
+    return {
       id: this.id,
       code: this.code,
       name: this.name,
       location: this.location,
-      surfaceM2: parseFloat(this.surfaceM2),
+      surfaceM2: this.surfaceM2,
       registrationDate: this.registrationDate,
-      manager: {
-        id: this.managerId,
-        name: this.managerName,
-        license: this.managerLicense
-      },
-      config: {
-        constructionSystemId: this.constructionSystemId,
-        artCoverageId: this.artCoverageId
-      }
+      manager: this.manager,
+      config: this.config,
+      stages: this.stages 
     };
-
-    if (this.stages && this.stages.length > 0) {
-      json.stages = this.stages;
-    }
-
-    return json;
   }
+
   static async getAll() {
     const sql = `
       SELECT 
-            p.id_proyecto,
-            p.codigo,
-            p.nombre,
-            p.ubicacion,
-            p.superficie_m2,
-            p.fecha_registro,
-            p.id_sistema_constructivo,
-            p.id_art,
-            p.id_responsable,
-            u.nombre as responsable_nombre,
-            u.matricula as matricula_responsable
+            p.id_proyecto as id,
+            p.codigo as code,
+            p.nombre as name,
+            p.ubicacion as location,
+            p.superficie_m2 as "surfaceM2",
+            TO_CHAR(p.fecha_registro, 'YYYY-MM-DD') as "registrationDate",
+            json_build_object(
+                'id', u.id_usuario,
+                'name', u.nombre,
+                'license', u.matricula
+            ) as manager,
+            -- Objeto de configuración (Config) con Nombres
+            json_build_object(
+                'constructionSystemId', p.id_sistema_constructivo,
+                'constructionSystemName', sc.nombre,
+                'artCoverageId', p.id_art,
+                'artName', ca.nombre_entidad_art
+            ) as config
         FROM PROYECTO p
-        INNER JOIN USUARIO u ON p.id_responsable = u.id_usuario
-        ORDER BY p.fecha_registro DESC
-    `;     
-    const projects = await db.any(sql);
-    return projects.map(p => new Project(p));
+        LEFT JOIN USUARIO u ON p.id_responsable = u.id_usuario
+        LEFT JOIN SISTEMA_CONSTRUCTIVO sc ON p.id_sistema_constructivo = sc.id_sistema
+        LEFT JOIN cobertura_art co ON p.id_art = co.id_art
+        LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
+        ORDER BY p.id_proyecto DESC;
+    `;
+
+    const results = await db.any(sql);
+    return results.map(row => new Project(row));
   }
   static async findById(id) {
     const sql = `
-      SELECT p.*, u.nombre as responsable_nombre 
+      SELECT 
+        p.id_proyecto as id,
+        p.codigo as code,
+        p.nombre as name,
+        p.ubicacion as location,
+        p.superficie_m2 as "surfaceM2",
+        p.fecha_registro as "registrationDate",
+        -- Objeto Manager con Licencia
+        json_build_object(
+          'id', u.id_usuario,
+          'name', u.nombre,
+          'license', u.matricula
+        ) as manager,
+        -- Objeto Config
+        json_build_object(
+          'constructionSystemId', p.id_sistema_constructivo,
+          'constructionSystemName', sc.nombre,
+          'artCoverageId', p.id_art,
+          'artName', ca.nombre_entidad_art
+        ) as config,
+        -- Subconsulta para ETAPAS y TAREAS
+        COALESCE(
+          (SELECT json_agg(etapa_data)
+           FROM (
+             SELECT 
+               e.id_etapa as id,
+               e.id_proyecto as "projectId",
+               e.id_tipo_etapa as "typeStageId",
+               e.fecha_inicio as "startDate",
+               e.fecha_fin as "endDate",
+               e.id_estado as "statusId",
+               te.nombre as "typeName",
+               es.nombre as "statusName",
+               -- Subconsulta para TAREAS dentro de la etapa
+               COALESCE(
+                 (SELECT json_agg(tarea_data)
+                  FROM (
+                    SELECT 
+                      t.id_tarea as id,
+                      t.id_etapa as "stageId",
+                      t.id_tipo_tarea as "typeTaskId",
+                      t.id_estado as "statusId",
+                      tt.nombre as "typeName",
+                      est.nombre as "statusName"
+                    FROM TAREA t
+                    JOIN TIPO_TAREA tt ON t.id_tipo_tarea = tt.id_tipo_tarea
+                    JOIN ESTADO est ON t.id_estado = est.id_estado
+                    WHERE t.id_etapa = e.id_etapa
+                  ) tarea_data), 
+                 '[]'::json
+               ) as tasks
+             FROM ETAPA e
+             JOIN TIPO_ETAPA te ON e.id_tipo_etapa = te.id_tipo_etapa
+             JOIN ESTADO es ON e.id_estado = es.id_estado
+             WHERE e.id_proyecto = p.id_proyecto
+             ORDER BY e.id_etapa ASC
+           ) etapa_data),
+          '[]'::json
+        ) as stages
       FROM PROYECTO p
       LEFT JOIN USUARIO u ON p.id_responsable = u.id_usuario
+      LEFT JOIN SISTEMA_CONSTRUCTIVO sc ON p.id_sistema_constructivo = sc.id_sistema
+      LEFT JOIN COBERTURA_ART co ON p.id_art = co.id_art
+      LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
       WHERE p.id_proyecto = $1;
     `;
-    const project = await db.oneOrNone(sql, [id]);
-    return project ? new Project(project) : null;
-  }
 
+    try {
+        const project = await db.oneOrNone(sql, [id]);
+        return project ? new Project(project) : null;
+    } catch (error) {
+        console.error("❌ Error en findById:", error.message);
+        throw error;
+    }
+}
   static async create(projectData, tx) {
     const connection = tx || db;
 
     const sql = `
       INSERT INTO PROYECTO (
-        codigo, nombre, ubicacion, superficie_m2, 
-        id_responsable, id_sistema_constructivo, id_art
+        nombre, 
+        ubicacion, 
+        superficie_m2, 
+        id_responsable, 
+        id_sistema_constructivo, 
+        id_art,
+        codigo
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *;
+      RETURNING 
+        id_proyecto AS id, 
+        codigo AS code, 
+        nombre AS name, 
+        ubicacion AS location, 
+        superficie_m2 AS "surfaceM2",
+        fecha_registro AS "registrationDate",
+        id_responsable AS "idResponsable",
+        id_sistema_constructivo AS "idSistemaConstructivo",
+        id_art AS "idArt";
     `;
+
     const params = [
-      projectData.codigo,
       projectData.nombre,
       projectData.ubicacion,
-      projectData.superficie_m2,
-      projectData.id_responsable,
-      projectData.id_sistema_constructivo,
+      parseFloat(projectData.superficie_m2),
+      parseInt(projectData.id_responsable),
+      parseInt(projectData.id_sistema_constructivo),
       projectData.id_art || null,
+      'TEMP-' + Date.now()
     ];
 
-    const result = await connection.one(sql, params);
-    return new Project(result);
+    try {
+      const result = await connection.one(sql, params);
+      return new Project(result);
+    } catch (error) {
+      console.error("error insert project:", error.message);
+      throw error;
+    }
   }
-  static async updateArt(artCoverageId, projectId) {
-    const sql = `
-      UPDATE PROYECTO 
-      SET id_art = $1 
-      WHERE id_proyecto = $2 
-      RETURNING *;
-    `;
-    const result = await db.oneOrNone(sql, [artCoverageId, projectId]);
-    return result ? new Project(result) : null;
-  }
-
   static async updateCode(id, generatedCode, t) {
     const sql = `
         UPDATE PROYECTO 
@@ -236,46 +322,46 @@ WHERE p.id_proyecto = $1
 
     const snapshotData = this._formatSnapshotJSON(rows, startDate, endDate);
     return snapshotData;
-  
+
 
   }
-static _formatSnapshotJSON(rows, startDate, endDate) {
+  static _formatSnapshotJSON(rows, startDate, endDate) {
     if (!rows || rows.length === 0) return null;
 
     const formatDate = (dateStr) => {
-        if (!dateStr) return null;
-        const [day, month, year] = dateStr.split('-');
-        return `${year}-${month}-${day}`;
+      if (!dateStr) return null;
+      const [day, month, year] = dateStr.split('-');
+      return `${year}-${month}-${day}`;
     };
 
     const fixProjectCode = (code) => {
-        const parts = code.split('-');
-        const lastPart = parts[parts.length - 1].padStart(3, '0');
-        return `RENO-AR-2026-${lastPart}`;
+      const parts = code.split('-');
+      const lastPart = parts[parts.length - 1].padStart(3, '0');
+      return `RENO-AR-2026-${lastPart}`;
     };
 
     const reportsMap = new Map();
 
     rows.forEach(row => {
-        if (!reportsMap.has(row.report_id)) {
-            reportsMap.set(row.report_id, {
-                fecha: formatDate(row.report_date),
-                supervisor: row.supervisor_name || "Sin asignar",
-                tareas_ejecutadas: new Set(),
-                oficios_activos: new Set(),
-                porcentaje_avance: row.stage_progress || 0
-            });
-        }
+      if (!reportsMap.has(row.report_id)) {
+        reportsMap.set(row.report_id, {
+          fecha: formatDate(row.report_date),
+          supervisor: row.supervisor_name || "Sin asignar",
+          tareas_ejecutadas: new Set(),
+          oficios_activos: new Set(),
+          porcentaje_avance: row.stage_progress || 0
+        });
+      }
 
-        const report = reportsMap.get(row.report_id);
-        if (row.task_name) report.tareas_ejecutadas.add(row.task_name);
-        if (row.trade_name) report.oficios_activos.add(row.trade_name);
+      const report = reportsMap.get(row.report_id);
+      if (row.task_name) report.tareas_ejecutadas.add(row.task_name);
+      if (row.trade_name) report.oficios_activos.add(row.trade_name);
     });
 
     const registrosAvanceArray = Array.from(reportsMap.values()).map(r => ({
-        ...r,
-        tareas_ejecutadas: r.tareas_ejecutadas.size > 0 ? Array.from(r.tareas_ejecutadas) : ["Sin tareas registradas"],
-        oficios_activos: r.oficios_activos.size > 0 ? Array.from(r.oficios_activos) : ["Sin oficios registrados"]
+      ...r,
+      tareas_ejecutadas: r.tareas_ejecutadas.size > 0 ? Array.from(r.tareas_ejecutadas) : ["Sin tareas registradas"],
+      oficios_activos: r.oficios_activos.size > 0 ? Array.from(r.oficios_activos) : ["Sin oficios registrados"]
     }));
 
     const lastRow = rows[rows.length - 1];
@@ -285,37 +371,37 @@ static _formatSnapshotJSON(rows, startDate, endDate) {
     const estadoSeguro = lastRow.validation_status || "PENDIENTE";
 
     return {
-        project: {
-            codigo: fixProjectCode(lastRow.project_code),
-            nombre: lastRow.project_name || "Proyecto sin nombre",
-            responsable_tecnico: lastRow.responsible_technician || "No asignado"
-        },
-        periodo: {
-            desde: startDate,
-            hasta: endDate
-        },
-        etapas: {
-            nombre: etapaSegura,
-            estado: estadoSeguro,
-            avance_estimado: lastRow.stage_progress || 0
-        },
-        registros_avance: registrosAvanceArray,
-        medidas_seguridad: {
-            fecha: formatDate(lastRow.report_date),
-            implementadas: todasLasMedidas.length > 0 ? todasLasMedidas : ["Uso de EPP básico"],
-            cobertura_art: {
-                entidad: lastRow.art_name || "No especificada",
-                vigencia: lastRow.art_name ? "Activa" : "No disponible"
-            }
-        },
-        validaciones_tecnicas: {
-            fecha: formatDate(lastRow.report_date),
-            estado: estadoSeguro,
-            etapa: etapaSegura,
-            responsable: lastRow.responsible_technician || "No asignado"
+      project: {
+        codigo: fixProjectCode(lastRow.project_code),
+        nombre: lastRow.project_name || "Proyecto sin nombre",
+        responsable_tecnico: lastRow.responsible_technician || "No asignado"
+      },
+      periodo: {
+        desde: startDate,
+        hasta: endDate
+      },
+      etapas: {
+        nombre: etapaSegura,
+        estado: estadoSeguro,
+        avance_estimado: lastRow.stage_progress || 0
+      },
+      registros_avance: registrosAvanceArray,
+      medidas_seguridad: {
+        fecha: formatDate(lastRow.report_date),
+        implementadas: todasLasMedidas.length > 0 ? todasLasMedidas : ["Uso de EPP básico"],
+        cobertura_art: {
+          entidad: lastRow.art_name || "No especificada",
+          vigencia: lastRow.art_name ? "Activa" : "No disponible"
         }
+      },
+      validaciones_tecnicas: {
+        fecha: formatDate(lastRow.report_date),
+        estado: estadoSeguro,
+        etapa: etapaSegura,
+        responsable: lastRow.responsible_technician || "No asignado"
+      }
     };
-}
+  }
   static _formatMonthlyJSON(rows, start, end) {
     const context = {
       proyecto: {
@@ -385,17 +471,121 @@ static _formatSnapshotJSON(rows, startDate, endDate) {
     return context;
   }
   static async findByName(name) {
-    const query = `
-        SELECT * FROM PROYECTO 
-        WHERE nombre ILIKE $1
-        ORDER BY nombre ASC
+    const sql = `
+        SELECT 
+            p.id_proyecto as id,
+            p.codigo as code,
+            p.nombre as name,
+            p.ubicacion as location,
+            p.superficie_m2 as "surfaceM2",
+            TO_CHAR(p.fecha_registro, 'YYYY-MM-DD') as "registrationDate",
+            json_build_object(
+                'id', u.id_usuario,
+                'name', u.nombre,
+                'license', u.matricula
+            ) as manager,
+            json_build_object(
+                'constructionSystemId', p.id_sistema_constructivo,
+                'constructionSystemName', sc.nombre,
+                'artCoverageId', p.id_art,
+                'artName', ca.nombre_entidad_art
+            ) as config
+        FROM PROYECTO p
+        LEFT JOIN USUARIO u ON p.id_responsable = u.id_usuario
+        LEFT JOIN SISTEMA_CONSTRUCTIVO sc ON p.id_sistema_constructivo = sc.id_sistema
+        LEFT JOIN cobertura_art co ON p.id_art = co.id_art
+        LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
+        WHERE p.nombre ILIKE $1 -- ILIKE hace búsqueda insensible a mayúsculas
+        ORDER BY p.id_proyecto DESC;
     `;
-    const params = [`%${name}%`];
 
-    const results = await db.any(query, params);
-    return results.map(row => new Project(row));
+    try {
+      const results = await db.any(sql, [`%${name}%`]);
+      return results.map(row => new Project(row));
+    } catch (error) {
+      console.error("error name search:", error.message);
+      throw error;
+    }
   }
 
-}
+  static async getFullProjectDetail(projectId) {
 
+    const sql = `SELECT 
+   p.id_proyecto,
+    p.codigo,
+    p.nombre,
+    p.ubicacion,
+    p.superficie_m2,
+    TO_CHAR(p.fecha_registro, 'DD/MM/YYYY') as fecha_registro,
+    u.nombre as responsable_nombre,
+    u.matricula as responsable_matricula,
+    sc.nombre as sistema_constructivo,
+    ca.nombre_entidad_art as art_entidad, -- Este es el campo que ahora sí va a venir
+    -- ETAPAS Y TAREAS (Anidadas con nombres de estado)
+    COALESCE(
+      (SELECT json_agg(etapa_data)
+      FROM (
+        SELECT 
+          e.id_etapa,
+          te.nombre as etapa_nombre,
+          e.progreso,
+          e.id_estado,
+          es_e.nombre as estado_nombre,
+          (
+            SELECT json_agg(tarea_data)
+            FROM (
+              SELECT 
+                t.id_tarea,
+                tt.nombre as tarea_nombre,
+                t.id_estado as tarea_id_estado,
+                es_t.nombre as tarea_estado_nombre
+              FROM TAREA t
+              JOIN TIPO_TAREA tt ON t.id_tipo_tarea = tt.id_tipo_tarea
+              JOIN ESTADO es_t ON t.id_estado = es_t.id_estado
+              WHERE t.id_etapa = e.id_etapa
+            ) tarea_data
+          ) as tareas
+        FROM ETAPA e
+        JOIN TIPO_ETAPA te ON e.id_tipo_etapa = te.id_tipo_etapa
+        JOIN ESTADO es_e ON e.id_estado = es_e.id_estado
+        WHERE e.id_proyecto = p.id_proyecto
+        ORDER BY e.id_etapa ASC
+      ) etapa_data), 
+      '[]'::json
+    ) as etapas,
+    -- ÚLTIMOS REGISTROS DE AVANCE
+    COALESCE(
+      (SELECT json_agg(registro_data)
+      FROM (
+        SELECT 
+          ra.id_registro_avance,
+          TO_CHAR(ra.fecha, 'DD/MM/YYYY') as fecha,
+          us.nombre as supervisor_nombre,
+          COALESCE(vt.estado, 'PENDIENTE') as estado_validacion
+        FROM REGISTRO_AVANCE ra
+        JOIN USUARIO us ON ra.id_supervisor = us.id_usuario
+        LEFT JOIN validacion_tecnica vt ON ra.id_registro_avance = vt.id_registro_avance
+        WHERE ra.id_proyecto = p.id_proyecto
+        ORDER BY ra.fecha DESC
+        LIMIT 5
+      ) registro_data), 
+      '[]'::json
+    ) as historial_reciente
+FROM PROYECTO p
+JOIN USUARIO u ON p.id_responsable = u.id_usuario
+LEFT JOIN SISTEMA_CONSTRUCTIVO sc ON p.id_sistema_constructivo = sc.id_sistema
+-- AQUÍ EL CAMBIO CLAVE:
+LEFT JOIN COBERTURA_ART co ON p.id_art = co.id_art
+LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
+WHERE p.id_proyecto = $1;`
+
+    const result = await db.oneOrNone(sql, [projectId]);
+
+    if (!result) return null;
+
+    return result;
+
+
+  }
+}
 module.exports = Project;
