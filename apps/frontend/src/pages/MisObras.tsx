@@ -12,6 +12,7 @@ const MisObras: React.FC = () => {
   const { user } = useAuth();
   const { getProjects } = useAuthApi();
   const [projects, setProjects] = React.useState<any[]>([]);
+  const [ isLoading, setIsLoading ] = useState(false)
 
   const [searchTerm, setSearchTerm] = useState("")
   const debouncedSearch = useDebounce(searchTerm, 300)
@@ -22,8 +23,11 @@ const MisObras: React.FC = () => {
   useEffect(() => {
     const fetchObras = async () => {
       try {
+        setIsLoading(true)
         const data = await getProjects();
         setProjects(data);
+
+        setIsLoading(false)
       } catch (error) {
         console.error("Error al cargar proyectos:", error);
       }
@@ -37,6 +41,13 @@ const MisObras: React.FC = () => {
     )
     return searchMatch
   })
+
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-[650px]">
+      <p className="text-xl font-medium text-primary">Cargando datos...</p>
+    </div>
+  }
 
 
   return (
