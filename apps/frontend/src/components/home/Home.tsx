@@ -1,16 +1,18 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { Search } from "../common/Search";
 import { Button } from "../common/Button";
 import CardData from "./CardData";
-import { ChartNoAxesCombined, ClockAlert, ListChecks, MapPin, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { ChartNoAxesCombined, ClockAlert, ListChecks, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { getAIGreeting } from "@/src/services/service";
 import { api, DashboardStats } from "@/src/services/api";
 import { Card } from "../common/Card";
 import { formatDate } from "@/src/utils/formateDate";
 import { ROUTE_BUILDERS, ROUTES } from "../../constants/routes";
 import DropdownFilter from "./DropdownFilter";
+import { DailyReport } from "@/src/types";
+import { useDebounce } from "@/src/hooks/useDebounced";
 
 const DATA = [
   { key: "activeProjects", icon: ChartNoAxesCombined, title: "Obras activas", color: "secondary" },
@@ -18,13 +20,6 @@ const DATA = [
   { key: "pendingTasks", icon: ClockAlert, title: "Tareas pendientes", color: "primary" },
   { key: "validatedProjects", icon: ListChecks, title: "Obras validadas", color: "accent-2" },
 ];
-
-const DATAHistorial = [
-  { id: 1, title: "Ampliación planta alta - Local gastronómico", location: "San Isidro, CABA", workStage: "Obra gruesa", taks: "Levantamiento de tabiques", percent: "100%", date: "2026-03-10T00:00:00.000Z" },
-  { id: 2, title: "Reforma vivienda unifamiliar", location: "Barrio Caballito, CABA", workStage: "Instalaciones", taks: "Eléctrica", percent: "75%", date: "2026-02-14T00:00:00.000Z" },
-  { id: 3, title: "Ampliación planta alta - Local gastronómico", location: "San Isidro, CABA", workStage: "Demolición y retiros", taks: "Picado de paredes, Retiro de abertura", percent: "100%", date: "2026-02-10T00:00:00.000Z" }
-];
-
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -37,33 +32,59 @@ const Home: React.FC = () => {
     artVigente: "0%",
     validatedProjects: 0,
   });
+  const [reports, setReports] = useState<DailyReport[]>([])
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("")
+  const debouncedSearch = useDebounce(searchTerm, 300)
 
 
-  const filteredHistorial = DATAHistorial.filter((item) => {
-    const date = new Date(item.date);
-    const monthMatch =
-      selectedMonth !== null ? date.getMonth() === selectedMonth : true;
-    const yearMatch =
-      selectedYear !== null ? date.getFullYear() === selectedYear : true;
+  const filteredHistorial = useMemo(() => {
+    return [...reports]
+      .sort(
+        (a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+      .filter((item) => {
+        const date = new Date(item.date)
 
-    return monthMatch && yearMatch;
-  });
+        const monthMatch =
+          selectedMonth !== null
+            ? date.getMonth() === selectedMonth
+            : true
 
-  const groupedByMonth = filteredHistorial.reduce((acc, item) => {
-    const date = new Date(item.date);
-    const month = date.toLocaleString("es-AR", { month: "long" });
-    const year = date.getFullYear();
-    const key = `${month} ${year}`;
+        const yearMatch =
+          selectedYear !== null
+            ? date.getFullYear() === selectedYear
+            : true
 
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(item);
+        const searchMatch = Object.values(item).some((value) =>
+          String(value).toLowerCase().includes(debouncedSearch.toLowerCase())
+        )
 
-    return acc;
-  }, {} as Record<string, typeof DATAHistorial>);
+        return monthMatch && yearMatch && searchMatch
+      })
+  }, [reports, selectedMonth, selectedYear, debouncedSearch])
+
+  const groupedByMonth = useMemo(() => {
+    return filteredHistorial.reduce(
+      (acc: Record<string, DailyReport[]>, item) => {
+        const date = new Date(item.date)
+        const month = date.toLocaleString("es-AR", {
+          month: "long",
+        })
+        const year = date.getFullYear()
+        const key = `${month} ${year}`
+
+        if (!acc[key]) acc[key] = []
+        acc[key].push(item)
+        return acc
+      },
+      {}
+    )
+  }, [filteredHistorial])
 
   const handleNewObraClick = () => {
     navigate(`${ROUTES.DASHBOARD}/${ROUTES.MIS_OBRAS_NUEVA}`);
@@ -72,15 +93,19 @@ const Home: React.FC = () => {
   useEffect(() => {
     const initDashboard = async () => {
       try {
-        const [msg, stats] = await Promise.all([
+        const [msg, stats, reports] = await Promise.all([
           getAIGreeting(user?.name || ""),
           api.getDashboardStats(),
+          api.getReports()
         ]);
         setGreeting(msg);
         setDashboardStats(stats);
-      } catch {
+        setReports(reports)
+
+      } catch (error) {
         const msg = await getAIGreeting(user?.name || "");
         setGreeting(msg);
+        console.error("Error cargando reportes:", error)
       }
     };
     initDashboard();
@@ -105,12 +130,17 @@ const Home: React.FC = () => {
 
   const hasResults = Object.keys(groupedByMonth).length > 0;
 
+
   return (
     <>
       <div className="grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
-        <Search placeholder="Buscar obra..." className={`mb-4 ${user?.idRol === 1 ? "lg:col-span-3" : "lg:col-span-4"}`} />
-        {user?.idRol === 1 && (  <Button variant="secondary" onClick={handleNewObraClick} className="mb-4 lg:col-span-1">+ Nueva obra</Button>) }
-      
+        <Search
+          placeholder="Buscar obra..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={`mb-4 ${user?.idRol === 1 ? "lg:col-span-3" : "lg:col-span-4"}`} />
+        {user?.idRol === 1 && (<Button variant="secondary" onClick={handleNewObraClick} className="mb-4 lg:col-span-1">+ Nueva obra</Button>)}
+
       </div>
       <h1 className="text-2xl font-bold mt-5">{greeting}</h1>
       <section className="mt-8 grid grid-cols-1 gap-4 lg:gap-14 md:grid-cols-2 lg:grid-cols-4">
@@ -138,47 +168,48 @@ const Home: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto pr-6">
           {hasResults ? (
-            Object.entries(groupedByMonth).map(([monthLabel, items]) => (
-              <div key={monthLabel}>
-                <p className="text-lg text-primary font-bold mt-6 capitalize">
-                  {monthLabel}
-                </p>
+            (Object.entries(groupedByMonth) as [string, DailyReport[]][])
+              .map(([monthLabel, items]) => (
+                <div key={monthLabel}>
+                  <p className="text-lg text-primary font-bold mt-6 capitalize">
+                    {monthLabel}
+                  </p>
 
-                <ul className="space-y-3 mt-4 ml-10">
-                  {items.map((item) => (
-                    <React.Fragment key={item.id}>
-                      <li >
-                        <Link to={ROUTE_BUILDERS.obraDetalle(item.id.toString())} className="grid grid-cols-4 items-end gap-5">
+                  <ul className="space-y-3 mt-4 ml-10">
+                    {items.map((item) => (
+                      <React.Fragment key={item.id}>
+                        <li >
+                          <Link to={ROUTE_BUILDERS.obraDetalle(item.id.toString())} className="grid grid-cols-4 items-end gap-5">
 
-                          <div className="col-span-3 gap-3">
-                            <p className="text-xs text-primary">
+                            <div className="col-span-3 gap-3">
+                              {/*  <p className="text-xs text-primary">
                               ETAPA {item.workStage.toUpperCase()}
-                            </p>
-                            <p className="text-[20px] font-bold">{item.taks}</p>
-                            <p className="text-sm font-bold">{item.title}</p>
-                            <p className="text-xs font-light">{item.location}</p>
-                          </div>
+                            </p> */}
+                              <p className="text-[20px] font-bold">{item.comment}</p>
+                              <p className="text-sm font-bold">{item.project_name}</p>
+                              <p className="text-xs font-light">Supervisor:{item.supervisor}</p>
+                            </div>
 
-                          <div className="col-span-1 text-right">
-                            <p className="text-xs text-primary">
-                              Avance total de obra
-                            </p>
-                            <p className="text-md font-bold text-primary">
-                              {item.percent}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              Fecha de registro: {formatDate(item.date)}
-                            </p>
-                          </div>
-                        </Link>
-                      </li>
+                            <div className="col-span-1 text-right">
+                              <p className="text-xs text-primary">
+                                Avance total de obra
+                              </p>
+                              <p className="text-md font-bold text-primary">
+                                {Math.round(Number(item.progress_percentage))}%
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                Fecha de registro: {formatDate(item.date)}
+                              </p>
+                            </div>
+                          </Link>
+                        </li>
 
-                      <hr className="border-neutro-2" />
-                    </React.Fragment>
-                  ))}
-                </ul>
-              </div>
-            ))
+                        <hr className="border-neutro-2" />
+                      </React.Fragment>
+                    ))}
+                  </ul>
+                </div>
+              ))
           ) : (
             <div className="mt-6 text-neutro-2">
               <p className="text-lg font-semibold">
@@ -190,6 +221,6 @@ const Home: React.FC = () => {
       </Card>
 
     </>
-  );
+  )
 }
 export default Home;

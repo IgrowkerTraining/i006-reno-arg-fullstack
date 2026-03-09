@@ -58,3 +58,13 @@ export interface PlanningCatalogResponse {
   planningStructure: PlanningCatalogStage[];
   artsCoverage: Array<{ id_art: number; name: string }>;
 }
+
+export interface DailyReport {
+  id: number;
+  date: string;
+  project_name: string;
+  supervisor: string;
+  progress_percentage: string;
+  comment: string;
+  validation_status: "PENDIENTE" | "VALIDADO";
+}
