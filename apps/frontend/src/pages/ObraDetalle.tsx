@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../services/api";
 import { Card } from "../components/common/Card";
-import { ArrowBigRight, BrickWall, Check, CheckCircle, ChevronRight, Clock, Flower, Hammer, Home, MapPin, SaveOff, Scan, ShieldCheck, User, XCircle, Zap } from "lucide-react";
+import { BrickWall, CalendarCheck, CheckCircle, ChevronRight, Clock, FileText, Flower, Hammer, Home, MapPin, Scan, ShieldCheck, User, XCircle, Zap } from "lucide-react";
 import { Button } from "../components/common/Button";
 import { formatDate, formatDayMonth } from "../utils/formateDate";
 import { Input } from "../components/common/Input";
@@ -17,8 +17,6 @@ const mapSistema: Record<number, SistemaConstructivo> = {
   2: "seco",
   3: "mixto",
 };
-
-
 
 const statusColors: Record<string, string> = {
   "Pendiente": "border-accent-2 text-accent-2",
@@ -38,7 +36,6 @@ const ObraDetalle: React.FC = () => {
 
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("")
-
 
 
   const handleGenerateAnalysis = async () => {
@@ -186,7 +183,7 @@ const ObraDetalle: React.FC = () => {
             </Card>
             <Card className="p-6 rounded-xl border-neutro-2">
               <h2 className="font-semibold text-xl">
-                <Hammer className="inline text-secondary w-10" /> Etapas planificadas
+                <CalendarCheck className="inline text-secondary w-10" /> Etapas planificadas
               </h2>
 
               <hr className="border-neutro-2 mt-4 mb-6" />
@@ -270,7 +267,7 @@ const ObraDetalle: React.FC = () => {
             <Card className="p-6 rounded-xl border-neutro-2 min-h-[300px] flex flex-col">
               <div className="md:flex items-center justify-between mb-2">
                 <h2 className="font-semibold text-xl">
-                  <Hammer className="inline text-secondary w-10" /> Registros diarios
+                  <FileText className="inline text-secondary w-10" /> Registros diarios
                 </h2>
                 <span className="text-sm">Total de registros: {reports?.length} </span>
               </div>

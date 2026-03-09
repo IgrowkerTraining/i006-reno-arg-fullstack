@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "../components/common/Card";
-import { Download, Eye, FileText, Flower, HardHat, UserRoundCog } from "lucide-react";
+import { Download, Eye, FileText, Flower, HardHat, LayoutPanelTop, UserRoundCog } from "lucide-react";
 import { Button } from "../components/common/Button";
 import { useRef } from "react";
 import { handleExportPDF } from "../utils/exportReport";
@@ -26,8 +26,6 @@ const ReporteIA: React.FC = () => {
     return <p>No hay análisis disponible</p>;
   }
 
-console.log({dataAnalysis});
-
 
   return (
     <div ref={reportRef}>
@@ -48,7 +46,7 @@ console.log({dataAnalysis});
 
         </Card>
         <Card className="flex flex-col gap-4 p-8 rounded-xl border-neutro-3 bg-white" >
-          <h4 className="font-bold text-xl"><FileText size={25} className="inline mr-2 text-accent" />Ejecución y Planificación</h4>
+          <h4 className="font-bold text-xl"><LayoutPanelTop size={25} className="inline mr-2 text-accent" />Ejecución y Planificación</h4>
           <div className="border-l-4 border-accent pl-4">
             <p >{dataAnalysis.ejecucion_y_planificacion}</p>
           </div>
