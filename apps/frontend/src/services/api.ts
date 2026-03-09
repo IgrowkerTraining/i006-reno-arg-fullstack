@@ -245,6 +245,10 @@ export const api = {
     });
   },
 
+   async getIAReportsByProjectId(projectId: string | number): Promise<any> {
+    return request<any>(API_ENDPOINTS.ANALYSIS_IA.history(projectId));
+  },
+
   async getValidations(): Promise<any[]> {
     return request<any[]>(API_ENDPOINTS.VALIDATIONS.BASE);
   },

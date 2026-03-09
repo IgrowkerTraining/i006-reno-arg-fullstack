@@ -7,22 +7,46 @@ import { Card } from "../components/common/Card";
 import { Button } from "../components/common/Button";
 import { useAuthApi } from "../hooks/useAuthApi";
 import { formatDate } from "../utils/formateDate";
+import Modal from "../components/common/Modal";
+import CardGenerateAI from "../components/common/CardGenerateAI";
+import { useNavigate } from "react-router-dom";
+
+const months = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+]
 
 
 
 const ReporteIA: React.FC = () => {
 
+  const navigate = useNavigate();
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const today = new Date()
-  const [selectedMonth, setSelectedMonth] = useState<number>(today.getMonth() + 1)
+  const [selectedMonth, setSelectedMonth] = useState<number>(today.getMonth())
   const [selectedYear, setSelectedYear] = useState<number>(today.getFullYear())
+  const monthName = months[selectedMonth]
   const { getProjects } = useAuthApi();
   const [projects, setProjects] = React.useState<any[]>([]);
 
   const [searchTerm, setSearchTerm] = useState("")
   const debouncedSearch = useDebounce(searchTerm, 300)
 
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<any | null>(null)
+  const [selectedProjectID, setSelectedProjectID] = useState<number | null>(null)
+
+  const handleOpenModal = (project) => {
+    setSelectedProject(project)
+    setSelectedProjectID(project.id)
+    setIsModalOpen(true)
+  }
+
+  const handleHistory = (id) => {
+    navigate(`/dashboard/reporte-ia/${id}/historial`);
+  }
 
   useEffect(() => {
     const fetchObras = async () => {
@@ -39,21 +63,20 @@ const ReporteIA: React.FC = () => {
   }, [getProjects]);
 
   const filteredProjects = projects.filter((project) => {
-    const searchMatch = Object.values(project).some((value) =>
-      String(value).toLowerCase().includes(debouncedSearch.toLowerCase())
-    )
-    const date = new Date(project.registrationDate)
-    const monthMatch =
-      selectedMonth !== null ? date.getMonth() === selectedMonth : true
+    const search = debouncedSearch.toLowerCase()
+    const searchMatch =
+      !search ||
+      project.name?.toLowerCase().includes(search) ||
+      project.code?.toLowerCase().includes(search) ||
+      project.location?.toLowerCase().includes(search)
 
-    const yearMatch =
-      selectedYear !== null ? date.getFullYear() === selectedYear : true
+    const date = new Date(project.registrationDate + "T00:00:00")
+
+    const monthMatch = selectedMonth === null ? true : date.getMonth() === selectedMonth
+    const yearMatch = selectedYear === null ? true : date.getFullYear() === selectedYear
 
     return searchMatch && monthMatch && yearMatch
   })
-
-  console.log("Projects:", projects);
-
 
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -72,7 +95,9 @@ const ReporteIA: React.FC = () => {
     };
   }, []);
 
-    if (isLoading) {
+
+
+  if (isLoading) {
     return <div className="flex items-center justify-center h-[650px]">
       <p className="text-xl font-medium text-primary">Cargando datos...</p>
     </div>
@@ -93,7 +118,7 @@ const ReporteIA: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="mt-6">
           <h4 className="text-xl text-primary font-bold">Proyectos recientes</h4>
-          <h5>Período: {selectedMonth}/{selectedYear}</h5>
+          <h5>Período: {monthName} {selectedYear} | ({filteredProjects.length} proyectos)</h5>
         </div>
         <div ref={filterRef} className="relative">
           <SlidersHorizontal className="text-primary cursor-pointer" onClick={() => setIsFilterOpen((prev) => !prev)} />
@@ -104,30 +129,47 @@ const ReporteIA: React.FC = () => {
       </div>
 
       <section className="mt-6 flex flex-col gap-2">
-        {filteredProjects.map((project) => (
+        {filteredProjects.length > 0 ? (
+          filteredProjects.map((project) => (
 
-          <Card key={project.id} className="rounded-xl w-full border-neutro-3 flex flex-col md:flex-row items-center justify-between bg-white px-6 py-4 gap-4">
-            <div >
+            <Card key={project.id} className="rounded-xl w-full border-neutro-3 flex flex-col md:flex-row items-center justify-between bg-white px-6 py-4 gap-4">
+              <div >
 
-              <div className="flex items-center gap-4">
-                <Building2 className="inline text-secondary w-6 h-6" />
-                <div >
-                  <span className="text-xs font-medium">
-                    {project.code}
-                  </span>
-                  <h3 className="text-lg font-semibold" >{project.name}</h3>
-                  <p className="text-md flex items-center">{project.location}</p>
-                  <p className="text-xs flex items-center">Fecha inicio de obra: {formatDate(project.registrationDate)}</p>
+                <div className="flex items-center gap-4">
+                  <Building2 className="inline text-secondary w-6 h-6" />
+                  <div >
+                    <span className="text-xs font-medium">
+                      {project.code}
+                    </span>
+                    <h3 className="text-lg font-semibold" >{project.name}</h3>
+                    <p className="text-md flex items-center">{project.location}</p>
+                    <p className="text-xs flex items-center">Fecha inicio de obra: {formatDate(project.registrationDate)}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex flex-col gap-2 text-[10px]">
-              <Button variant="secondary" onClick={() => ""} className=""><Flower className="inline w-4 h-4 mr-2" />GENERAR ANÁLISIS IA</Button>
-              <Button variant="accent" onClick={() => ""} className=""><Eye className="inline w-4 h-4 mr-2" />REPORTES IA GENERADOS</Button>
-            </div>
-          </Card>
-        ))}
+              <div className="flex flex-col gap-2 text-[10px]">
+                <Button variant="secondary" onClick={() => handleOpenModal(project)} className=""><Flower className="inline w-4 h-4 mr-2" />GENERAR ANÁLISIS IA</Button>
+                <Button variant="accent" onClick={() => handleHistory(project.id)} className=""><Eye className="inline w-4 h-4 mr-2" />REPORTES IA GENERADOS</Button>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <p className="text-gray-500">No hay proyectos para este período.</p>
+        )}
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title="Análisis IA"
+        >
+          {selectedProject && (
+            <>
+              <p className="font-semibold">{selectedProject.name}</p>
+              <p className="text-sm text-gray-500">{selectedProject.location}</p>
 
+              <CardGenerateAI id={selectedProject.id} />
+            </>
+          )}
+        </Modal>
 
       </section>
     </div>

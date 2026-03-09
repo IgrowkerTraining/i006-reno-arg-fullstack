@@ -11,6 +11,7 @@ export const ROUTES = {
   OBRA_REGISTRO_FINALIZAR: 'mis-obras/:obraId/registro/finalizar',
   REPORTE_IA: 'reporte-ia',
   REPORTE_IA_OBRA: 'reporte-ia/:obraId',
+  REPORTE_IA_OBRA_HISTORIAL: 'reporte-ia/:obraId/historial',
   HOME: '/',
 } as const;
 
@@ -23,6 +24,8 @@ export const ROUTE_BUILDERS = {
     `/dashboard/mis-obras/${obraId}/registro/finalizar`,
   reporteIAObra: (obraId: string | number) =>
   `/dashboard/reporte-ia/${obraId}`,
+   reporteIAObraHistorial: (obraId: string | number) =>
+  `/dashboard/reporte-ia/${obraId}/historial`,
 } as const;
 
 const API_BASE_URL =
@@ -67,8 +70,8 @@ export const API_ENDPOINTS = {
     project: (projectId: string | number) => `/api/reports/project/${projectId}`,
   },
   ANALYSIS_IA: {
-    generate: (projectId: string | number) =>
-      `/api/analysis-ia/generate/${projectId}`,
+    generate: (projectId: string | number) => `/api/analysis-ia/generate/${projectId}`,
+    history: (projectId: string | number) => `/api/analysis-ia/history/${projectId}`,
   },
   DASHBOARD: {
     STATS: '/api/dashboard/stats',

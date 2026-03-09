@@ -26,6 +26,8 @@ const ReporteIA: React.FC = () => {
     return <p>No hay análisis disponible</p>;
   }
 
+  console.log({dataAnalysis});
+  
 
   return (
     <div ref={reportRef}>
@@ -33,7 +35,7 @@ const ReporteIA: React.FC = () => {
       <header className="flex items-end gap-6 mt-4">
         <div>
           <h2 className="font-bold text-2xl my-2">{dataAnalysis.proyecto}</h2>
-          <h4 className="font-semibold">Periodo analizado: {month} | {year} | Fecha de generación: {formatDate(dataAnalysis.fecha_de_generacion)}</h4>
+          <h4 className="font-semibold">Periodo analizado: {month} | {year} | Fecha de generación: {dataAnalysis.fecha_de_generacion}</h4>
         </div>
         <Button variant="outline" className="ml-auto" onClick={() =>  handleExportPDF({ reportRef, dataAnalysis } ) } data-html2canvas-ignore="true"><Download size={20} className="mr-2" />Exportar PDF</Button>
       </header>

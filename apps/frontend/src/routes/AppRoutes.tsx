@@ -17,6 +17,7 @@ import NotFound from "../pages/NotFound";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../hooks/useAuth";
 import Home from "../components/home/Home";
+import ReporteIAObraHistorial from "../pages/ReporteIAObraHistorial";
 
 const RootRedirect: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -65,6 +66,7 @@ export const AppRoutes: React.FC = () => {
         <Route path={ROUTES.OBRA_REGISTRO_FINALIZAR} element={<RegistroFinalizar />} />
         <Route path={ROUTES.REPORTE_IA} element={<ReporteIA />} />
         <Route path={ROUTES.REPORTE_IA_OBRA} element={<ReporteIAObra />} />
+        <Route path={ROUTES.REPORTE_IA_OBRA_HISTORIAL} element={<ReporteIAObraHistorial />} />
       </Route>
 
       <Route path={ROUTES.HOME} element={<RootRedirect />} />

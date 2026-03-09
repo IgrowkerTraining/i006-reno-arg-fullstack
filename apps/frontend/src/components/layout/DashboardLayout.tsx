@@ -5,7 +5,7 @@ import { Outlet, useMatch } from "react-router-dom";
 export const DashboardLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-const matchReporteIA = useMatch("/dashboard/reporte-ia");
+const matchReporteIA = useMatch("/dashboard/reporte-ia/*");
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 1023px)");
