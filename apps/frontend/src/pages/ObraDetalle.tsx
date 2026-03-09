@@ -7,16 +7,10 @@ import { Button } from "../components/common/Button";
 import { formatDate, formatDayMonth } from "../utils/formateDate";
 import { Input } from "../components/common/Input";
 import { useAuth } from "../hooks/useAuth";
-import { SistemaConstructivo } from "../types";
-import { capitalize, toUpperCase } from "../utils/capitalize";
+import {  toUpperCase } from "../utils/capitalize";
 import { ProgressBar } from "../components/common/ProgressBar";
 
 
-const mapSistema: Record<number, SistemaConstructivo> = {
-  1: "tradicional",
-  2: "seco",
-  3: "mixto",
-};
 
 const statusColors: Record<string, string> = {
   "Pendiente": "border-accent-2 text-accent-2",
@@ -165,7 +159,7 @@ const ObraDetalle: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs">SISTEMA</p>
-                  <p className="font-bold">{capitalize(mapSistema[project.config.constructionSystemId])}</p>
+                  <p className="font-bold">{project.config.constructionSystemName}</p>
                 </div>
                 <div>
                   <p className="text-xs">FECHA DE INICIO</p>
@@ -244,7 +238,7 @@ const ObraDetalle: React.FC = () => {
                   </span>
                 </div>
                 <article className="w-full p-4 rounded-lg bg-secondary/50 my-2">
-                  <p className="font-bold text-md">Provincia ART</p>
+                  <p className="font-bold text-md">{project.config.artName}</p>
                   <p className="text-sm">Cobertura activa para todo el personal</p>
                 </article>
               </Card>
@@ -286,13 +280,13 @@ const ObraDetalle: React.FC = () => {
                             </div>
                             <div className="flex flex-col">
                               <p className="text-md">{report.comment !== "" ? report.comment : "Sin comentarios"}</p>
-                              <p className="text-sm">Supervisor:  | <span className=""> Pendiente</span></p>
+                              <p className="text-sm">Supervisor: {report.supervisor.name} <span className={`${report.validation.status === "PENDIENTE" ? "text-accent-2" : "text-primary"} ml-4`}>&bull; {report.validation.status}</span></p>
                             </div>
                           </div>
                           <div className="flex items-center justify-end gap-4 ">
                             <Button variant="accent" className="text-sm">VALIDAR REGISTRO</Button>
                             <span className="flex justify-end text-secondary-plus">{Math.round(Number(report.progressPercentage))}%</span>
-                            <ChevronRight className="text-secondary-plus" />
+                            <ChevronRight className="text-secondary-plus" onClick={()=>{}}/> 
                           </div>
                         </li>
                         <hr className="border-neutro-2" />
