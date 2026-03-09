@@ -66,5 +66,5 @@ export interface DailyReport {
   supervisor: string;
   progress_percentage: string;
   comment: string;
-  validation_status: "PENDIENTE" | "VALIDADO";
+  validation_status: "PENDIENTE" | "APROBADO";
 }
