@@ -9,12 +9,6 @@ class AnalysisIaController {
             const { projectId } = req.params;
             const { month, year } = req.body;
 
-            // if (!month || !year || !projectId) {
-            //     const error = new Error('Month, year, and project ID are required');
-            //     error.status = 400;
-            //     return next(error);
-            // }
-
             const errors = [];
 
             if (!month) {

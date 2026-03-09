@@ -34,30 +34,37 @@ class ReportController {
             return next(error);
         }
     }
-    static async getReportDetail(req, res, next) {
-        try {
-            const { id } = req.params;
-            const report = await ReportService.getReportById(id);
+   static async getReportDetail(req, res, next) {
+    try {
+        const { id } = req.params;
 
-            if (!report) {
-                const error = new Error(`Report with ID: ${id} not found`);
-                error.status = 404;
-                return next(error);
-            }
-
-            res.status(200).json(report);
-        } catch (error) {
-            const err = new Error("Report detail not found");
-            err.status = 500;
-            err.details = error.message;
-            return next(err);
+        if (!id || isNaN(id)) {
+            const error = new Error(`ID not valid: (${id}) must be a number`);
+            error.status = 400;
+            return next(error);
         }
+
+        const report = await ReportService.getReportById(id);
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: `Report with ID: ${id} not found`
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: report
+        });
+
+    } catch (error) {
+        console.error(`[ReportController] Error fetching report ${req.params.id}:`, error.message);
+        return next(error); 
     }
+}
     static async getReportsByProject(req, res, next) {
         try {
             const { projectId } = req.params;
-
-            // Llamamos al Service
             const reports = await ReportService.getReportsByProjectId(projectId);
 
             return res.status(200).json({

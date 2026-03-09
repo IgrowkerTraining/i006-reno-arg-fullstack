@@ -15,8 +15,6 @@ class ProjectController {
                     data: projects
                 });
             }
-
-
             const projects = await ProjectService.getAllProjects();
             return res.status(200).json({
                 success: true,
@@ -82,9 +80,10 @@ class ProjectController {
         try {
             const userId = req.user.id;
             const projects = await ProjectService.getUserProjects(userId);
-
-            return res.status(200).json(projects);
-
+            return res.status(200).json({
+                success: true,
+                data: projects
+            });
         } catch (error) {
             next(error);
         }
@@ -104,6 +103,33 @@ class ProjectController {
             next(error);
         }
     }
+
+static async getFullProject(req, res, next) {
+    try {
+        const { projectId } = req.params;
+
+        if (!projectId || isNaN(projectId)) {
+            const error = new Error('projectId must be a valid number');
+            error.status = 400;
+            return next(error);
+        }
+
+        const project = await ProjectService.getFullProject(projectId);
+
+        if (!project) {
+            const error = new Error('Project not found');
+            error.status = 404;
+            return next(error);
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: project
+        });
+    } catch (error) {
+        return next(error);
+    }
+}
 }
 
 module.exports = ProjectController;

@@ -89,6 +89,60 @@ router.get('/', verifyToken, ProjectController.getAllProjects);
  */
 router.get('/:id', verifyToken, ProjectController.getProjectById);
 
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/detail:
+ *   get:
+ *     summary: Obtiene el detalle completo de un proyecto
+ *     description: Retorna toda la información de la obra, incluyendo etapas, tareas con sus estados y los últimos 5 registros de avance.
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del proyecto
+ *     responses:
+ *       200:
+ *         description: Detalle del proyecto obtenido con éxito
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id_proyecto:
+ *                       type: integer
+ *                     nombre:
+ *                       type: string
+ *                     etapas:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           etapa_nombre:
+ *                             type: string
+ *                           estado_nombre:
+ *                             type: string
+ *                           tareas:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *       404:
+ *         description: Proyecto no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/:projectId/detail', verifyToken, ProjectController.getFullProject);
+
 /**
  * @swagger
  * /api/projects:

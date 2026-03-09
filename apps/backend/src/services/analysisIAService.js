@@ -1,6 +1,6 @@
 
 //const snapshotModule = require('../mocks/snapshotMock');
-//const snapshotMock = snapshotModule.default;  // 👈 usar el default
+//const snapshotMock = snapshotModule.default;
 const Project = require('../models/Project');
 const AnalysisIA = require('../models/AnalysisIA');
 
@@ -68,33 +68,6 @@ static async getAnalysisById(id) {
     return analysis;
 }
 
-    /*
-    const data = await Project.getSnapshotDataForAI(projectId, month, year);
-    try {
-    
-    const contextData = await Project.getSnapshotDataForAI(projectId, month, year);
-
-    // 2. Imprimimos en consola para verificar
-    console.log("-----------------------------------------");
-    console.log("DATOS REALES DEL PROYECTO PARA IA:");
-    console.log(JSON.stringify(contextData, null, 2));
-    console.log("-----------------------------------------");
-
-    // 3. Devolvemos los datos para que Swagger los muestre y cortamos acá para probar
-    return {
-        message: "Prueba de datos exitosa",
-        data: contextData
-    };
-
-    /* Comentamos el resto temporalmente para que no intente llamar a la IA aún
-    const resultIA = await this.callExternalAI(snapshotMock); 
-    return await resultIA;
-   
-} catch (error) {
-    console.error("Error obteniendo datos del proyecto:", error.message);
-    throw error;
-}
-*/
 }
 
 module.exports = AnalysisIAService; 

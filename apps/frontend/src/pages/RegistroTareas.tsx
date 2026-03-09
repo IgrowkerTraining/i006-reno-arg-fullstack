@@ -59,7 +59,7 @@ const RegistroTareas = () => {
       setOficiosSeleccionados(draft.selectedTrades ?? []);
 
       try {
-        const setup = await api.getReportSetup();
+        const setup = await api.getReportSetup(obraId);
 
         if (Array.isArray(setup?.tasks)) {
           const backendTaskOptions: ChecklistOption[] = [];
