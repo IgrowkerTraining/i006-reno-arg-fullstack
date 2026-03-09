@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { api } from "../services/api";
 import { Card } from "../components/common/Card";
-import { BrickWall, CalendarCheck, CheckCircle, ChevronRight, Clock, FileText, Flower, Hammer, Home, MapPin, Scan, ShieldCheck, User, XCircle, Zap } from "lucide-react";
+import { BrickWall, CalendarCheck, CheckCircle, ChevronRight, Clock, FileText, Hammer, Home, MapPin, Scan, ShieldCheck, User, XCircle, Zap } from "lucide-react";
 import { Button } from "../components/common/Button";
 import { formatDate, formatDayMonth } from "../utils/formateDate";
-import { Input } from "../components/common/Input";
 import { useAuth } from "../hooks/useAuth";
 import {  toUpperCase } from "../utils/capitalize";
 import { ProgressBar } from "../components/common/ProgressBar";
+import CardGenerateAI from "../components/common/CardGenerateAI";
 
 
 
@@ -24,38 +24,6 @@ const ObraDetalle: React.FC = () => {
   const [project, setProject] = useState(null);
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(false);
-  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
-
-  const navigate = useNavigate();
-
-  const [month, setMonth] = useState("");
-  const [year, setYear] = useState("")
-
-
-  const handleGenerateAnalysis = async () => {
-    if (!obraId || !month || !year) return;
-
-    try {
-      setLoadingAnalysis(true);
-      const response = await api.generateAnalysis(
-        obraId,
-        Number(month),
-        Number(year)
-      );
-
-      navigate(`/dashboard/reporte-ia/${obraId}`, {
-        state: {
-          analysis: response,
-          month,
-          year,
-        },
-      });
-    } catch (error) {
-      console.error("Error generando análisis", error);
-    } finally {
-      setLoadingAnalysis(false);
-    }
-  };
 
 
   useEffect(() => {
@@ -113,44 +81,8 @@ const ObraDetalle: React.FC = () => {
                     <span className="text-xs">{project.manager.license || "Sin matrícula"}</span>
                   </div>
                 </div>
-              </div>
-            
-                <Card className="p-6 mx-4 my-6 rounded-lg bg-neutro-3/60 border-neutro-3">
-                  {loadingAnalysis ? (
-                <p className="text-md text-neutro-1 animate-pulse">
-                  Generando análisis con IA, esto puede tardar unos segundos...
-                </p>
-              ) :
-                 (
-                  <><p className="pb-2">Período a analizar:</p>
-                  <div className="flex gap-2 mb-4">
-                    <Input
-                      type="number"
-                      placeholder="Mes"
-                      min="1"
-                      max="12"
-                      value={month}
-                      onChange={(e) => setMonth(e.target.value)}
-                      className="rounded-md border-neutro-2 bg-white text-base placeholder:text-slate-400"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Año"
-                      value={year}
-                      onChange={(e) => setYear(e.target.value)}
-                      className="rounded-md border-neutro-2 bg-white text-base placeholder:text-slate-400"
-                    />
-                  </div>
-                  <Button
-                    variant="secondary"
-                    className=" mb-4 w-full"
-                    onClick={handleGenerateAnalysis}
-                  >
-                    <Flower className="inline mr-2" />
-                    GENERAR ANALISIS IA
-                  </Button>
-                  </> )}
-                </Card>
+              </div>            
+                <CardGenerateAI id={project.id}/>
             </Card>
 
             <Card className="p-6 rounded-xl border-neutro-2">
