@@ -6,7 +6,9 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CircleUserRound,
   FileText,
+  Hash,
   Hammer,
   MapPin,
   Maximize2,
@@ -20,9 +22,9 @@ import { Stepper } from "../components/common/Stepper";
 import { ROUTES } from "../constants/routes";
 import { api, CreateProjectPayload } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
+import { normalizeText } from "../utils/normalizeText";
 
 type SistemaConstructivo = "tradicional" | "seco" | "mixto";
-type StepThreeView = "seleccion" | "planificacion" | "art";
 
 interface NuevaObraForm {
   projectName: string;
@@ -56,7 +58,23 @@ interface PlanningCatalogResponse {
   artsCoverage: Array<{ id_art: number; name: string }>;
 }
 
-const STEPS = ["General", "Sistema y planificacion"];
+interface UserProfileResponse {
+  id: string | number;
+  name: string;
+  lastName: string;
+  licenseNo?: string | null;
+}
+
+type FieldErrorKey =
+  | "projectName"
+  | "location"
+  | "surface"
+  | "tasks"
+  | "artProvider"
+  | "artCoverageConfirmed"
+  | "pdfFile";
+
+const STEPS = ["General", "Sistema", "Planificación", "ART"];
 
 const SYSTEM_OPTIONS: Array<{
   id: SistemaConstructivo;
@@ -66,7 +84,7 @@ const SYSTEM_OPTIONS: Array<{
   {
     id: "tradicional",
     title: "Tradicional",
-    description: "Ladrillos, revoque humedo, hormigon.",
+    description: "Ladrillos, revoque húmedo, hormigón.",
   },
   {
     id: "seco",
@@ -83,7 +101,7 @@ const SYSTEM_OPTIONS: Array<{
 const PLANNING_GROUPS: PlanningGroup[] = [
   {
     id: "demolicion",
-    title: "Demolicion y retiros",
+    title: "Demolición y retiros",
     tasks: [
       "Picado de pared",
       "Retiro de aberturas",
@@ -94,37 +112,24 @@ const PLANNING_GROUPS: PlanningGroup[] = [
   {
     id: "obra-gruesa",
     title: "Obra gruesa",
-    tasks: [
-      "Levantamiento de tabique",
-      "Contrapiso",
-      "Carpeta",
-      "Revoque fino",
-    ],
+    tasks: ["Levantamiento de tabique", "Contrapiso", "Carpeta", "Revoque fino"],
   },
   {
     id: "instalaciones",
     title: "Instalaciones",
-    tasks: [
-      "Canalizacion electrica",
-      "Instalacion sanitaria",
-      "Instalacion de gas",
-    ],
+    tasks: ["Canalización eléctrica", "Instalación sanitaria", "Instalación de gas"],
   },
   {
     id: "terminaciones",
     title: "Terminaciones",
-    tasks: [
-      "Pintura interior",
-      "Colocacion de revestimientos",
-      "Carpinterias",
-    ],
+    tasks: ["Pintura interior", "Colocación de revestimientos", "Carpinterías"],
   },
 ];
 
 const ART_PROVIDERS = [
   { id: "1", name: "Provincia ART" },
   { id: "2", name: "La Segunda ART" },
-  { id: "3", name: "Prevencion ART" },
+  { id: "3", name: "Prevención ART" },
   { id: "4", name: "Swiss Medical ART" },
 ];
 
@@ -143,23 +148,26 @@ const FALLBACK_TASK_IDS: Record<string, { stageId: number; taskId: number }> = {
   carpeta: { stageId: 2, taskId: 6 },
   "revoque fino": { stageId: 4, taskId: 12 },
   "canalizacion electrica": { stageId: 3, taskId: 8 },
+  "canalización eléctrica": { stageId: 3, taskId: 8 },
   "instalacion sanitaria": { stageId: 3, taskId: 9 },
+  "instalación sanitaria": { stageId: 3, taskId: 9 },
   "instalacion de gas": { stageId: 3, taskId: 10 },
+  "instalación de gas": { stageId: 3, taskId: 10 },
   "pintura interior": { stageId: 5, taskId: 18 },
   "colocacion de revestimientos": { stageId: 5, taskId: 15 },
+  "colocación de revestimientos": { stageId: 5, taskId: 15 },
   carpinterias: { stageId: 5, taskId: 17 },
+  carpinterías: { stageId: 5, taskId: 17 },
 };
 
-const normalizeText = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[()]/g, " ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-
 const TEXT_FIELD_REGEX = /^[\p{L}\p{N}\s.,\-#/()]+$/u;
+const MIS_OBRAS_PATH = `${ROUTES.DASHBOARD}/${ROUTES.MIS_OBRAS}`;
+
+const createInitialTasks = () =>
+  PLANNING_GROUPS.reduce<Record<string, string[]>>((accumulator, group) => {
+    const initialTask = group.id === "demolicion" ? [group.tasks[0]] : [];
+    return { ...accumulator, [group.id]: initialTask };
+  }, {});
 
 const sanitizeTextInput = (value: string) =>
   value.replace(/[^\p{L}\p{N}\s.,\-#/()]/gu, "");
@@ -172,26 +180,24 @@ const sanitizeSurfaceInput = (value: string) => {
   return `${integerPart}.${decimalParts.join("")}`;
 };
 
-const MIS_OBRAS_PATH = `${ROUTES.DASHBOARD}/${ROUTES.MIS_OBRAS}`;
-
-const createInitialTasks = () =>
-  PLANNING_GROUPS.reduce<Record<string, string[]>>((accumulator, group) => {
-    const initialTask = group.id === "demolicion" ? [group.tasks[0]] : [];
-    return { ...accumulator, [group.id]: initialTask };
-  }, {});
+const isPdfFile = (file: File) =>
+  file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 
 const NuevaObra: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [step, setStep] = useState(0);
-  const [stepThreeView, setStepThreeView] = useState<StepThreeView>("seleccion");
-  const [planningCatalog, setPlanningCatalog] =
-    useState<PlanningCatalogResponse | null>(null);
+  const [planningCatalog, setPlanningCatalog] = useState<PlanningCatalogResponse | null>(null);
   const [artProviders, setArtProviders] = useState(ART_PROVIDERS);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [catalogWarning, setCatalogWarning] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof NuevaObraForm, string>>>({});
+  const [responsableError, setResponsableError] = useState<string | null>(null);
+  const [isLoadingResponsable, setIsLoadingResponsable] = useState(false);
+  const [managerName, setManagerName] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldErrorKey, string>>>({});
   const [formData, setFormData] = useState<NuevaObraForm>({
     projectName: "",
     location: "",
@@ -200,10 +206,7 @@ const NuevaObra: React.FC = () => {
     artProvider: "",
     artCoverageConfirmed: false,
   });
-  const [selectedTasks, setSelectedTasks] = useState<Record<string, string[]>>(
-    createInitialTasks,
-  );
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [selectedTasks, setSelectedTasks] = useState<Record<string, string[]>>(createInitialTasks);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -221,14 +224,37 @@ const NuevaObra: React.FC = () => {
           );
         }
       } catch {
-        setCatalogWarning(
-          "No se pudo obtener el catalogo completo. Se usaran opciones locales.",
-        );
+        setCatalogWarning("No se pudo obtener el catálogo completo. Se usarán opciones locales.");
       }
     };
 
-    loadPlanningCatalog();
+    void loadPlanningCatalog();
   }, []);
+
+  useEffect(() => {
+    const loadResponsable = async () => {
+      if (!user?.id) return;
+
+      setIsLoadingResponsable(true);
+      setResponsableError(null);
+
+      try {
+        const profile = (await api.getUserById(user.id)) as UserProfileResponse;
+        const fullName = [profile?.name, profile?.lastName].filter(Boolean).join(" ").trim();
+
+        setManagerName(fullName || [user.name, user.lastName].filter(Boolean).join(" "));
+        setLicenseNumber(profile?.licenseNo?.trim() || "Sin matrícula");
+      } catch {
+        setManagerName([user.name, user.lastName].filter(Boolean).join(" "));
+        setLicenseNumber("Sin matrícula");
+        setResponsableError("No se pudo obtener el responsable desde backend. Se usa el usuario logueado.");
+      } finally {
+        setIsLoadingResponsable(false);
+      }
+    };
+
+    void loadResponsable();
+  }, [user]);
 
   const creationDate = useMemo(() => {
     const now = new Date();
@@ -244,11 +270,7 @@ const NuevaObra: React.FC = () => {
   );
 
   const selectedTasksCount = useMemo(
-    () =>
-      Object.values(selectedTasks).reduce(
-    (accumulator, list) => accumulator + list.length,
-        0,
-      ),
+    () => Object.values(selectedTasks).reduce((accumulator, list) => accumulator + list.length, 0),
     [selectedTasks],
   );
 
@@ -282,30 +304,32 @@ const NuevaObra: React.FC = () => {
             isValidLocation(formData.location) &&
             isValidSurface(formData.surface),
         )
-      : stepThreeView === "planificacion"
+      : step === 1
+        ? Boolean(formData.systemType)
+        : step === 2
           ? selectedTasksCount > 0
-        : stepThreeView === "art"
-            ? Boolean(
-                formData.artProvider.trim() && formData.artCoverageConfirmed,
-              )
-            : true;
+          : Boolean(formData.artProvider.trim() && formData.artCoverageConfirmed);
 
   const validateCurrentStep = () => {
-    const nextErrors: Partial<Record<keyof NuevaObraForm, string>> = {};
+    const nextErrors: Partial<Record<FieldErrorKey, string>> = {};
 
     if (step === 0) {
       if (!isValidProjectName(formData.projectName)) {
         nextErrors.projectName = "Ingresá un nombre de al menos 3 caracteres.";
       }
       if (!isValidLocation(formData.location)) {
-        nextErrors.location = "Ingresá una ubicación válida.";
+        nextErrors.location = "Ingresá una dirección válida.";
       }
       if (!isValidSurface(formData.surface)) {
         nextErrors.surface = "Ingresá una superficie numérica mayor a 0.";
       }
     }
 
-    if (step === 1 && stepThreeView === "art") {
+    if (step === 2 && selectedTasksCount === 0) {
+      nextErrors.tasks = "Seleccioná al menos una tarea para la planificación.";
+    }
+
+    if (step === 3) {
       if (!formData.artProvider.trim()) {
         nextErrors.artProvider = "Seleccioná una ART.";
       }
@@ -381,6 +405,7 @@ const NuevaObra: React.FC = () => {
 
     const selectedTasksByStage = getSelectedTasksByStage();
     const startDate = new Date().toISOString().split("T")[0];
+<<<<<<< Updated upstream
 
     const etapas: CreateProjectPayload["etapas"] = Array.from(
       selectedTasksByStage.entries(),
@@ -389,22 +414,29 @@ const NuevaObra: React.FC = () => {
       fecha_inicio: startDate,
       tareas: Array.from(taskIds).map(id => Number(id)),
     }));
+=======
+    const etapas: CreateProjectPayload["etapas"] = Array.from(selectedTasksByStage.entries()).map(
+      ([stageId, taskIds]) => ({
+        id_tipo_etapa: stageId,
+        fecha_inicio: startDate,
+        tareas: Array.from(taskIds),
+      }),
+    );
+>>>>>>> Stashed changes
 
     if (!etapas.length) {
-      setSubmitError("Selecciona al menos una tarea para crear la obra.");
+      setSubmitError("Seleccioná al menos una tarea para crear la obra.");
       return;
     }
 
-    const parsedSurface = Number(
-      formData.surface.replace(",", ".").replace(/[^0-9.]+/g, ""),
-    );
+    const parsedSurface = Number(formData.surface.replace(",", ".").replace(/[^0-9.]+/g, ""));
 
     const payload: CreateProjectPayload = {
       nombre: formData.projectName.trim(),
       ubicacion: formData.location.trim(),
       superficie_m2: Number.isFinite(parsedSurface) ? parsedSurface : 0,
       id_responsable: Number(user.id),
-      matricula_responsable: "NO-0000",
+      matricula_responsable: licenseNumber === "Sin matrícula" ? "" : licenseNumber,
       id_sistema_constructivo: getSystemId(),
       id_art: formData.artProvider.trim() ? Number(formData.artProvider) : null,
       etapas,
@@ -422,16 +454,13 @@ const NuevaObra: React.FC = () => {
         try {
           await api.updateProjectArt(createdProjectId, selectedArtId);
         } catch {
-          setCatalogWarning(
-            "La obra se creo, pero no se pudo actualizar la cobertura ART.",
-          );
+          setCatalogWarning("La obra se creó, pero no se pudo actualizar la cobertura ART.");
         }
       }
       */
       navigate(MIS_OBRAS_PATH);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "No se pudo crear la obra.";
+      const message = error instanceof Error ? error.message : "No se pudo crear la obra.";
       setSubmitError(message);
     } finally {
       setIsSubmitting(false);
@@ -439,35 +468,22 @@ const NuevaObra: React.FC = () => {
   };
 
   const handleInputChange =
-    (field: keyof NuevaObraForm) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    (field: keyof NuevaObraForm) => (event: React.ChangeEvent<HTMLInputElement>) => {
       let nextValue = event.target.value;
-      if (field === "surface") {
-        nextValue = sanitizeSurfaceInput(nextValue);
-      }
-      if (field === "projectName" || field === "location") {
-        nextValue = sanitizeTextInput(nextValue);
+      if (field === "surface") nextValue = sanitizeSurfaceInput(nextValue);
+      if (field === "projectName" || field === "location") nextValue = sanitizeTextInput(nextValue);
+
+      const errorKey = field as FieldErrorKey;
+      if (fieldErrors[errorKey]) {
+        setFieldErrors((previous) => ({ ...previous, [errorKey]: "" }));
       }
 
-      if (fieldErrors[field]) {
-        setFieldErrors((previous) => ({ ...previous, [field]: "" }));
-      }
       setFormData((previous) => ({ ...previous, [field]: nextValue }));
     };
 
   const handleBack = () => {
     if (step === 0) {
       navigate(MIS_OBRAS_PATH);
-      return;
-    }
-
-    if (step === 1 && stepThreeView === "art") {
-      setStepThreeView("planificacion");
-      return;
-    }
-
-    if (step === 1 && stepThreeView === "planificacion") {
-      setStepThreeView("seleccion");
       return;
     }
 
@@ -479,21 +495,8 @@ const NuevaObra: React.FC = () => {
       return;
     }
 
-    if (step === 1 && stepThreeView === "seleccion") {
-      setStepThreeView("planificacion");
-      return;
-    }
-
-    if (step === 1 && stepThreeView === "planificacion") {
-      setStepThreeView("art");
-      return;
-    }
-
     if (step < STEPS.length - 1) {
       setStep((previous) => previous + 1);
-      if (step + 1 === 1) {
-        setStepThreeView("seleccion");
-      }
       return;
     }
 
@@ -501,6 +504,10 @@ const NuevaObra: React.FC = () => {
   };
 
   const toggleTask = (groupId: string, task: string) => {
+    if (fieldErrors.tasks) {
+      setFieldErrors((previous) => ({ ...previous, tasks: "" }));
+    }
+
     setSelectedTasks((previous) => {
       const currentList = previous[groupId] ?? [];
       const updatedList = currentList.includes(task)
@@ -518,6 +525,7 @@ const NuevaObra: React.FC = () => {
     if (fieldErrors.artCoverageConfirmed) {
       setFieldErrors((previous) => ({ ...previous, artCoverageConfirmed: "" }));
     }
+
     setFormData((previous) => ({
       ...previous,
       artCoverageConfirmed: event.target.checked,
@@ -528,6 +536,7 @@ const NuevaObra: React.FC = () => {
     if (fieldErrors.artProvider) {
       setFieldErrors((previous) => ({ ...previous, artProvider: "" }));
     }
+
     setFormData((previous) => ({ ...previous, artProvider: event.target.value }));
   };
 
@@ -536,26 +545,57 @@ const NuevaObra: React.FC = () => {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedList = event.target.files ? Array.from(event.target.files) : [];
-    if (!selectedList.length) return;
+    const selected = event.target.files?.[0];
+    if (!selected) return;
 
-    setUploadedFiles((previous) => [...previous, ...selectedList]);
-    event.target.value = "";
+    if (!isPdfFile(selected)) {
+      setFieldErrors((previous) => ({ ...previous, pdfFile: "Solo se permiten archivos PDF." }));
+      event.target.value = "";
+      return;
+    }
+
+    if (fieldErrors.pdfFile) {
+      setFieldErrors((previous) => ({ ...previous, pdfFile: "" }));
+    }
+
+    setUploadedFile(selected);
   };
 
   const renderGeneralStep = () => (
     <section className="space-y-4">
       <div className="rounded-sm border-l-2 border-secondary pl-3">
         <h2 className="text-lg font-semibold text-neutro-1">Datos generales</h2>
-        <p className="text-sm text-slate-500">
-          Identifica el proyecto para el seguimiento diario.
-        </p>
+        <p className="text-sm text-slate-500">Identificá el proyecto para el seguimiento diario.</p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold uppercase tracking-wide text-neutro-1">
+            Responsable técnico
+          </label>
+          <Input
+            icon={<CircleUserRound size={16} />}
+            value={isLoadingResponsable ? "Cargando responsable..." : managerName}
+            readOnly
+            className="rounded-md border-transparent bg-[#ECECEF] text-base text-slate-500"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold uppercase tracking-wide text-neutro-1">
+            Matrícula
+          </label>
+          <Input
+            icon={<Hash size={16} />}
+            value={isLoadingResponsable ? "Cargando matrícula..." : licenseNumber}
+            readOnly
+            className="rounded-md border-transparent bg-[#ECECEF] text-base text-slate-500"
+          />
+        </div>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xl uppercase tracking-wide text-neutro-1">
-          Nombre del proyecto
-        </label>
+        <label className="text-xl uppercase tracking-wide text-neutro-1">Nombre del proyecto</label>
         <Input
           icon={<Building2 size={16} />}
           value={formData.projectName}
@@ -567,23 +607,19 @@ const NuevaObra: React.FC = () => {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xl uppercase tracking-wide text-neutro-1">
-          Ubicacion / direccion
-        </label>
+        <label className="text-xl uppercase tracking-wide text-neutro-1">Ubicación / dirección</label>
         <Input
           icon={<MapPin size={16} />}
           value={formData.location}
           error={fieldErrors.location}
           onChange={handleInputChange("location")}
-          placeholder="Calle, numero y localidad"
+          placeholder="Calle, número y localidad"
           className="rounded-md border-transparent bg-[#ECECEF] text-base placeholder:text-slate-400"
         />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xl uppercase tracking-wide text-neutro-1">
-          Superficie estimada
-        </label>
+        <label className="text-xl uppercase tracking-wide text-neutro-1">Superficie estimada</label>
         <Input
           icon={<Maximize2 size={16} />}
           value={formData.surface}
@@ -597,13 +633,11 @@ const NuevaObra: React.FC = () => {
     </section>
   );
 
-  const renderSistemaSeleccionStep = () => (
+  const renderSistemaStep = () => (
     <section className="space-y-5">
       <div className="rounded-sm border-l-2 border-secondary pl-3">
-        <h2 className="text-lg font-semibold text-neutro-1">Sistema Constructivo</h2>
-        <p className="text-sm text-slate-500">
-          Selecciona el metodo predominante de la intervencion.
-        </p>
+        <h2 className="text-lg font-semibold text-neutro-1">Sistema constructivo</h2>
+        <p className="text-sm text-slate-500">Seleccioná el método predominante de la intervención.</p>
       </div>
 
       <div className="space-y-2">
@@ -614,9 +648,7 @@ const NuevaObra: React.FC = () => {
             <button
               key={option.id}
               type="button"
-              onClick={() =>
-                setFormData((previous) => ({ ...previous, systemType: option.id }))
-              }
+              onClick={() => setFormData((previous) => ({ ...previous, systemType: option.id }))}
               className={`w-full rounded-md border px-4 py-3 text-left transition-colors ${
                 isSelected
                   ? "border-[#BAC1D8] bg-[#EEF0F7]"
@@ -630,9 +662,7 @@ const NuevaObra: React.FC = () => {
                 </div>
                 <span
                   className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
-                    isSelected
-                      ? "border-primary text-primary"
-                      : "border-primary text-transparent"
+                    isSelected ? "border-primary text-primary" : "border-primary text-transparent"
                   }`}
                 >
                   <Check size={18} />
@@ -648,10 +678,8 @@ const NuevaObra: React.FC = () => {
   const renderPlanificacionStep = () => (
     <section className="space-y-5">
       <div className="rounded-sm border-l-2 border-secondary pl-3">
-        <h2 className="text-lg font-semibold text-neutro-1">Sistema Constructivo</h2>
-        <p className="text-sm text-slate-500">
-          Selecciona el metodo predominante de la intervencion.
-        </p>
+        <h2 className="text-lg font-semibold text-neutro-1">Sistema constructivo</h2>
+        <p className="text-sm text-slate-500">Seleccioná el método predominante de la intervención.</p>
       </div>
 
       <div className="rounded-md border border-[#BAC1D8] bg-[#EEF0F7] px-4 py-3">
@@ -670,14 +698,14 @@ const NuevaObra: React.FC = () => {
         <div className="rounded-t-xl bg-primary/8 px-4 py-3">
           <h3 className="flex items-center gap-2 text-xl font-semibold uppercase text-primary">
             <Hammer size={16} />
-            Planificacion de etapas
+            Planificación de etapas
           </h3>
           <p className="mt-1 text-sm text-slate-500">
-            Tilda las tareas que formaran parte de esta obra.
+            Tildá las tareas que formarán parte de esta obra.
           </p>
         </div>
 
-        <div className="max-h-64 space-y-4 overflow-y-auto p-4 pr-3">
+        <div className="max-h-72 space-y-4 overflow-y-auto p-4 pr-3">
           {PLANNING_GROUPS.map((group) => (
             <div key={group.id} className="rounded-md border border-[#DBE0EF] bg-white">
               <h4 className="rounded-t-md bg-[#DFE5F8] px-3 py-2 text-lg font-semibold uppercase text-primary">
@@ -704,19 +732,19 @@ const NuevaObra: React.FC = () => {
           ))}
         </div>
       </Card>
+
+      {fieldErrors.tasks ? <p className="text-xs text-red-600">{fieldErrors.tasks}</p> : null}
     </section>
   );
 
   const renderArtStep = () => (
     <section className="space-y-5">
-      <h2 className="text-4xl font-bold text-neutro-1">
-        {formData.projectName.trim() || "Nueva obra"}
-      </h2>
+      <h2 className="text-4xl font-bold text-neutro-1">{formData.projectName.trim() || "Nueva obra"}</h2>
 
       <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
         <span className="flex items-center gap-1.5">
           <MapPin size={14} />
-          {formData.location.trim() || "Ubicacion sin definir"}
+          {formData.location.trim() || "Ubicación sin definir"}
         </span>
         <span className="flex items-center gap-1.5">
           <CalendarDays size={14} />
@@ -728,54 +756,56 @@ const NuevaObra: React.FC = () => {
         </span>
       </div>
 
+      <div className="flex items-center gap-2 text-sm text-neutro-1">
+        <CircleUserRound size={16} className="text-secondary-plus" />
+        <span>
+          {managerName || "Responsable sin asignar"} · Matrícula {licenseNumber || "-"}
+        </span>
+      </div>
+
       <Card className="border-secondary bg-[#D9ECF1] p-4">
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-xl border border-secondary bg-white/50 p-4 text-center">
             <Upload size={20} className="mx-auto text-primary" />
-            <h3 className="mt-2 text-lg font-semibold text-primary">Cargar documentacion</h3>
+            <h3 className="mt-2 text-lg font-semibold text-primary">Cargar documentación</h3>
             <p className="mt-1 text-xs text-slate-600">
-              Certificado de cobertura o constancia de no repeticion.
+              Certificado de cobertura o cláusula de no repetición (PDF).
             </p>
             <div className="mt-3 flex justify-center">
               <Button type="button" variant="outline" onClick={handleOpenFileSelector}>
                 <FileText size={16} className="mr-1" />
-                Adjuntar
+                Adjuntar PDF
               </Button>
             </div>
             <input
               ref={fileInputRef}
               type="file"
-              multiple
+              accept=".pdf,application/pdf"
               className="hidden"
               onChange={handleFileChange}
             />
-            {uploadedFiles.length ? (
-              <p className="mt-2 text-xs text-slate-600">
-                {uploadedFiles.length} archivo(s) cargado(s)
-              </p>
+            {uploadedFile ? (
+              <p className="mt-2 text-xs text-slate-600">Archivo cargado: {uploadedFile.name}</p>
             ) : null}
+            {fieldErrors.pdfFile ? <p className="mt-2 text-xs text-red-600">{fieldErrors.pdfFile}</p> : null}
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-xl font-semibold text-neutro-1">
-              Seguridad e Higiene y ART
-            </h3>
+            <h3 className="text-xl font-semibold text-neutro-1">Seguridad e Higiene y ART</h3>
             <p className="text-xs text-slate-600">Aseguradora</p>
             <select
               value={formData.artProvider}
               onChange={handleArtProviderChange}
               className="w-full rounded-md border border-[#B8D8E3] bg-white px-3 py-2.5 text-sm text-neutro-1 focus:outline-none focus:ring-2 focus:ring-secondary"
             >
-              <option value="">Selecciona ART</option>
+              <option value="">Seleccioná ART</option>
               {artProviders.map((provider) => (
                 <option key={provider.id} value={provider.id}>
                   {provider.name}
                 </option>
               ))}
             </select>
-            {fieldErrors.artProvider ? (
-              <p className="text-xs text-red-600">{fieldErrors.artProvider}</p>
-            ) : null}
+            {fieldErrors.artProvider ? <p className="text-xs text-red-600">{fieldErrors.artProvider}</p> : null}
 
             <label className="flex items-center gap-2 text-sm text-neutro-1">
               <input
@@ -793,8 +823,7 @@ const NuevaObra: React.FC = () => {
             <div className="flex items-start gap-2 rounded-md bg-white/60 px-3 py-2 text-xs text-slate-600">
               <ShieldCheck size={14} className="mt-0.5 text-primary" />
               <p>
-                Verifica la cobertura antes de crear la obra para habilitar el
-                seguimiento diario.
+                Verificá la cobertura antes de crear la obra para habilitar el seguimiento diario.
               </p>
             </div>
           </div>
@@ -805,17 +834,12 @@ const NuevaObra: React.FC = () => {
 
   const renderStepContent = () => {
     if (step === 0) return renderGeneralStep();
-    if (stepThreeView === "seleccion") return renderSistemaSeleccionStep();
-    if (stepThreeView === "planificacion") return renderPlanificacionStep();
+    if (step === 1) return renderSistemaStep();
+    if (step === 2) return renderPlanificacionStep();
     return renderArtStep();
   };
 
-  const nextLabel =
-    step === 1 && stepThreeView === "art"
-      ? "Crear nueva obra"
-      : step === 1 && stepThreeView === "planificacion"
-        ? "Continuar"
-        : "Siguiente";
+  const nextLabel = step === STEPS.length - 1 ? "Crear nueva obra" : "Siguiente";
 
   return (
     <div className="mx-auto w-full max-w-4xl pb-10">
@@ -823,9 +847,7 @@ const NuevaObra: React.FC = () => {
         <header className="bg-secondary-plus px-10 py-6 text-white">
           <h1 className="text-2xl font-bold uppercase">Alta de nueva obra</h1>
           <p className="mt-1 text-sm text-white/90">
-            {step === 0
-              ? `Fecha de creacion ${creationDate}`
-              : "Proyecto RENO Studio"}
+            {step === 0 ? `Fecha de creación ${creationDate}` : "Proyecto RENO Studio"}
           </p>
         </header>
 
@@ -834,18 +856,14 @@ const NuevaObra: React.FC = () => {
 
           {renderStepContent()}
 
-          {catalogWarning ? (
-            <p className="text-sm text-amber-700">{catalogWarning}</p>
-          ) : null}
-
-          {submitError ? (
-            <p className="text-sm text-red-600">{submitError}</p>
-          ) : null}
+          {catalogWarning ? <p className="text-sm text-amber-700">{catalogWarning}</p> : null}
+          {responsableError ? <p className="text-sm text-amber-700">{responsableError}</p> : null}
+          {submitError ? <p className="text-sm text-red-600">{submitError}</p> : null}
 
           <footer className="flex items-center justify-between">
             <Button type="button" variant="ghost" onClick={handleBack} disabled={isSubmitting}>
               <ChevronLeft size={16} className="mr-1" />
-              Atras
+              Atrás
             </Button>
 
             <Button
@@ -853,7 +871,7 @@ const NuevaObra: React.FC = () => {
               onClick={() => {
                 void handleNext();
               }}
-              disabled={!canContinue || isSubmitting}
+              disabled={!canContinue || isSubmitting || isLoadingResponsable}
               isLoading={isSubmitting}
             >
               {nextLabel}

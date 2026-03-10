@@ -11,6 +11,7 @@ import ObraDetalle from "../pages/ObraDetalle";
 import RegistroTareas from "../pages/RegistroTareas";
 import RegistroSeguridad from "../pages/RegistroSeguridad";
 import RegistroFinalizar from "../pages/RegistroFinalizar";
+import DetalleRegistro from "../pages/DetalleRegistro";
 import ReporteIA from "../pages/ReporteIA";
 import NotFound from "../pages/NotFound";
 import { ROUTES } from "../constants/routes";
@@ -59,6 +60,7 @@ export const AppRoutes: React.FC = () => {
         <Route path={ROUTES.MIS_OBRAS} element={<MisObras />} />
         <Route path={ROUTES.MIS_OBRAS_NUEVA} element={<NuevaObra />} />
         <Route path={ROUTES.OBRA_DETALLE} element={<ObraDetalle />} />
+        <Route path={ROUTES.OBRA_REGISTRO_DETALLE} element={<DetalleRegistro />} />
         <Route path={ROUTES.OBRA_REGISTRO} element={<RegistroTareas />} />
         <Route path={ROUTES.OBRA_REGISTRO_SEGURIDAD} element={<RegistroSeguridad />} />
         <Route path={ROUTES.OBRA_REGISTRO_FINALIZAR} element={<RegistroFinalizar />} />
