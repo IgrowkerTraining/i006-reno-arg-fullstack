@@ -10,6 +10,7 @@ import { formatDate } from "../utils/formateDate";
 import Modal from "../components/common/Modal";
 import CardGenerateAI from "../components/common/CardGenerateAI";
 import { useNavigate } from "react-router-dom";
+import { api } from "../services/api";
 
 const months = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -38,6 +39,8 @@ const ReporteIA: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null)
   const [selectedProjectID, setSelectedProjectID] = useState<number | null>(null)
 
+  const [projectReportsMap, setProjectReportsMap] = useState<Record<number, boolean>>({})
+
   const handleOpenModal = (project) => {
     setSelectedProject(project)
     setSelectedProjectID(project.id)
@@ -61,6 +64,26 @@ const ReporteIA: React.FC = () => {
     };
     fetchObras();
   }, [getProjects]);
+
+  useEffect(() => {
+    const checkReports = async () => {
+      const results: Record<number, boolean> = {}
+      await Promise.all(
+        projects.map(async (project) => {
+          try {
+            const response = await api.getIAReportsByProjectId(project.id);
+            results[project.id] = response.data.length > 0
+          } catch {
+            results[project.id] = false
+          }
+        })
+      )
+      setProjectReportsMap(results)
+    }
+    if (projects.length > 0) {
+      checkReports()
+    }
+  }, [projects])
 
   const filteredProjects = projects.filter((project) => {
     const search = debouncedSearch.toLowerCase()
@@ -147,9 +170,17 @@ const ReporteIA: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 text-[10px]">
+              <div className="flex flex-col md:flex-row gap-3 text-sm">
+                {projectReportsMap[project.id] && (
+                  <Button
+                    variant="accent"
+                    onClick={() => handleHistory(project.id)}
+                  >
+                    <Eye className="inline w-4 h-4 mr-2" />
+                    REPORTES IA GENERADOS
+                  </Button>
+                )}
                 <Button variant="secondary" onClick={() => handleOpenModal(project)} className=""><Flower className="inline w-4 h-4 mr-2" />GENERAR ANÁLISIS IA</Button>
-                <Button variant="accent" onClick={() => handleHistory(project.id)} className=""><Eye className="inline w-4 h-4 mr-2" />REPORTES IA GENERADOS</Button>
               </div>
             </Card>
           ))

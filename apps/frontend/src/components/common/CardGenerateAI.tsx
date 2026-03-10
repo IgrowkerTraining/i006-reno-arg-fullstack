@@ -52,10 +52,7 @@ const CardGenerateAI: React.FC<CardGenerateAIProps> = ({ id }) => {
         }
     };
 
-    console.log("ID:", id)
-    console.log("Month:", month)
-    console.log("Year:", year)
-
+ 
     return (
         <Card className="p-6 mx-4 my-6 rounded-lg bg-neutro-3/60 border-neutro-3">
             {loadingAnalysis ? (
@@ -64,17 +61,9 @@ const CardGenerateAI: React.FC<CardGenerateAIProps> = ({ id }) => {
                 </p>
             ) :
                 (
-                    <><p className="pb-2">Período a analizar:</p>
+                    <>
+                        <p className="pb-2">Período a analizar:</p>
                         <div className="flex gap-2 mb-4">
-                            {/*  <Input
-                                type="number"
-                                placeholder="Mes"
-                                min="1"
-                                max="12"
-                                value={month}
-                                onChange={(e) => setMonth(e.target.value)}
-                                className="rounded-md border-neutro-2 bg-white text-base placeholder:text-slate-400"
-                            /> */}
                             <select
                                 value={month}
                                 onChange={(e) => setMonth(e.target.value)}
