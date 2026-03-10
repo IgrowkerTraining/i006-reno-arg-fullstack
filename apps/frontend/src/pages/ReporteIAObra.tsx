@@ -26,7 +26,6 @@ const ReporteIA: React.FC = () => {
     return <p>No hay análisis disponible</p>;
   }
 
-  console.log({dataAnalysis});
   
 
   return (
