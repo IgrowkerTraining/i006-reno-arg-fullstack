@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../services/api";
@@ -46,8 +47,7 @@ const ObraDetalle: React.FC = () => {
       }
     };
 
-    loadProject();
-
+    void loadProject();
   }, [obraId]);
 
   if (loading) {

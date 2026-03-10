@@ -6,6 +6,7 @@ export const ROUTES = {
   MIS_OBRAS: 'mis-obras',
   MIS_OBRAS_NUEVA: 'mis-obras/nueva',
   OBRA_DETALLE: 'mis-obras/:obraId',
+  OBRA_REGISTRO_DETALLE: 'mis-obras/:obraId/registros/:registroId',
   OBRA_REGISTRO: 'mis-obras/:obraId/registro',
   OBRA_REGISTRO_SEGURIDAD: 'mis-obras/:obraId/registro/seguridad',
   OBRA_REGISTRO_FINALIZAR: 'mis-obras/:obraId/registro/finalizar',
@@ -17,6 +18,8 @@ export const ROUTES = {
 
 export const ROUTE_BUILDERS = {
   obraDetalle: (obraId: string) => `/dashboard/mis-obras/${obraId}`,
+  obraRegistroDetalle: (obraId: string, registroId: string) =>
+    `/dashboard/mis-obras/${obraId}/registros/${registroId}`,
   obraRegistro: (obraId: string) => `/dashboard/mis-obras/${obraId}/registro`,
   obraRegistroSeguridad: (obraId: string) =>
     `/dashboard/mis-obras/${obraId}/registro/seguridad`,
@@ -50,6 +53,7 @@ export const API_ENDPOINTS = {
     BASE: '/api/projects',
     MY_PROJECTS: '/api/projects/my-projects',
     byId: (id: string | number) => `/api/projects/${id}`,
+    detail: (projectId: string | number) => `/api/projects/${projectId}/detail`,
     updateArt: (id: string | number) => `/api/projects/${id}/art`,
   },
   CATALOG: {
@@ -66,18 +70,24 @@ export const API_ENDPOINTS = {
   REPORTS: {
     BASE: '/api/reports',
     byId: (id: string | number) => `/api/reports/${id}`,
+    byProject: (projectId: string | number) => `/api/reports/project/${projectId}`,
     setup: (projectId: string | number) => `/api/reports/setup/${projectId}`,
     project: (projectId: string | number) => `/api/reports/project/${projectId}`,
   },
   ANALYSIS_IA: {
-    generate: (projectId: string | number) => `/api/analysis-ia/generate/${projectId}`,
-    history: (projectId: string | number) => `/api/analysis-ia/history/${projectId}`,
+    BASE: '/api/analysis-ia',
+    generate: (projectId: string | number) =>
+      `/api/analysis-ia/generate/${projectId}`,
+    history: (projectId: string | number) =>
+      `/api/analysis-ia/history/${projectId}`,
+    byId: (id: string | number) => `/api/analysis-ia/${id}`,
   },
   DASHBOARD: {
     STATS: '/api/dashboard/stats',
   },
   VALIDATIONS: {
     BASE: '/api/validations',
+    byId: (id: string | number) => `/api/validations/${id}`,
   },
 } as const;
 
