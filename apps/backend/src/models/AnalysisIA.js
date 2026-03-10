@@ -5,14 +5,20 @@ class AnalysisIA {
         this.id = data.id_analisis;
         this.projectId = data.id_proyecto;
         this.createdAt = data.fecha;
-        const content = data.contenido_json;
+        const content = JSON.parse(JSON.stringify(data.contenido_json));
 
-        if (content && content.resultado && content.resultado.Proyecto) {
-            content.resultado.Proyecto.Direccion = data.ubicacion;
+        if (content?.resultado?.Proyecto) {
+            const datosIA = content.resultado.Proyecto;
+            content.resultado.Proyecto = {
+                Nombre: typeof datosIA === 'object' ? datosIA.Nombre : datosIA,
+                Codigo: datosIA.Código || datosIA.Codigo || "N/A",
+                Responsable: datosIA["Responsable Técnico"] || "No asignado",
+                Direccion: data.ubicacion
+            };
         }
         this.content = content;
-
     }
+
     static async save(projectId, analysisData) {
         const result = await db.one(`
             INSERT INTO ANALISIS_IA (id_proyecto, contenido_json)
