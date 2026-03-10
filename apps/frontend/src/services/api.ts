@@ -272,14 +272,6 @@ export const api = {
     return request<DashboardStats>(API_ENDPOINTS.DASHBOARD.STATS);
   },
 
-<<<<<<< Updated upstream
-  async getProjects(): Promise<any[]> {
-    return request<any[]>(API_ENDPOINTS.PROJECTS.BASE, {}, true);
-  },
-
-  async getMyProjects(): Promise<any[]> {
-    return request<any[]>(API_ENDPOINTS.PROJECTS.MY_PROJECTS, {}, true);
-=======
   async getProjects(name?: string): Promise<any[]> {
     const endpoint = name
       ? `${API_ENDPOINTS.PROJECTS.BASE}?name=${encodeURIComponent(name)}`
@@ -296,7 +288,6 @@ export const api = {
       true,
     );
     return unwrapListResponse(response);
->>>>>>> Stashed changes
   },
 
   async getProjectById(projectId: string | number): Promise<any> {
@@ -377,6 +368,10 @@ export const api = {
     return unwrapListResponse(response);
   },
 
+  async getReportByProjectId(projectId: string | number): Promise<any> {
+    return request<any>(API_ENDPOINTS.REPORTS.project(projectId));
+  },
+
   async createDailyReport(data: CreateDailyReportPayload): Promise<any> {
     return request<any>(API_ENDPOINTS.REPORTS.BASE, {
       method: "POST",
@@ -422,6 +417,10 @@ export const api = {
       true,
     );
     return unwrapDataResponse(response);
+  },
+
+   async getIAReportsByProjectId(projectId: string | number): Promise<any> {
+    return request<any>(API_ENDPOINTS.ANALYSIS_IA.history(projectId));
   },
 
   async getValidations(): Promise<any[]> {

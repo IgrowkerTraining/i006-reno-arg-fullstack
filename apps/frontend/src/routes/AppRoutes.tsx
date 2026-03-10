@@ -13,10 +13,13 @@ import RegistroSeguridad from "../pages/RegistroSeguridad";
 import RegistroFinalizar from "../pages/RegistroFinalizar";
 import DetalleRegistro from "../pages/DetalleRegistro";
 import ReporteIA from "../pages/ReporteIA";
+import ReporteIAObra from "../pages/ReporteIAObra";
 import NotFound from "../pages/NotFound";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../hooks/useAuth";
 import Home from "../components/home/Home";
+import ReporteIAObraHistorial from "../pages/ReporteIAObraHistorial";
+import ReporteIAObraHistorialDetalle from "../pages/ReporteIAObraHistorialDetalle";
 
 const RootRedirect: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -65,6 +68,9 @@ export const AppRoutes: React.FC = () => {
         <Route path={ROUTES.OBRA_REGISTRO_SEGURIDAD} element={<RegistroSeguridad />} />
         <Route path={ROUTES.OBRA_REGISTRO_FINALIZAR} element={<RegistroFinalizar />} />
         <Route path={ROUTES.REPORTE_IA} element={<ReporteIA />} />
+        <Route path={ROUTES.REPORTE_IA_OBRA} element={<ReporteIAObra />} />
+        <Route path={ROUTES.REPORTE_IA_OBRA_HISTORIAL} element={<ReporteIAObraHistorial />} />
+        <Route path={ROUTES.REPORTE_IA_OBRA_HISTORIAL_DETALLE} element={<ReporteIAObraHistorialDetalle />} />
       </Route>
 
       <Route path={ROUTES.HOME} element={<RootRedirect />} />

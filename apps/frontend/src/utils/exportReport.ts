@@ -2,8 +2,8 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 
-export const handleExportPDF = async ({ reportRef, data }) => {
-  if (!reportRef.current || !data) return;
+export const handleExportPDF = async ({ reportRef, dataAnalysis }) => {
+  if (!reportRef.current || !dataAnalysis) return;
 
   const canvas = await html2canvas(reportRef.current, {
     scale: 2,
@@ -13,7 +13,7 @@ export const handleExportPDF = async ({ reportRef, data }) => {
   const imgData = canvas.toDataURL("image/png");
   const pdf = new jsPDF("p", "mm", "a4");
 
-  const margin = 15; 
+  const margin = 15;
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
@@ -33,5 +33,5 @@ export const handleExportPDF = async ({ reportRef, data }) => {
     heightLeft -= pageHeight - margin * 2;
   }
 
-  pdf.save(`Reporte_${data.codigo}.pdf`);
+  pdf.save(`Reporte_${dataAnalysis.codigo}.pdf`);
 };

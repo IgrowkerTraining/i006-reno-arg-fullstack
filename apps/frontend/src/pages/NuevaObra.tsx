@@ -405,7 +405,6 @@ const NuevaObra: React.FC = () => {
 
     const selectedTasksByStage = getSelectedTasksByStage();
     const startDate = new Date().toISOString().split("T")[0];
-<<<<<<< Updated upstream
 
     const etapas: CreateProjectPayload["etapas"] = Array.from(
       selectedTasksByStage.entries(),
@@ -414,15 +413,6 @@ const NuevaObra: React.FC = () => {
       fecha_inicio: startDate,
       tareas: Array.from(taskIds).map(id => Number(id)),
     }));
-=======
-    const etapas: CreateProjectPayload["etapas"] = Array.from(selectedTasksByStage.entries()).map(
-      ([stageId, taskIds]) => ({
-        id_tipo_etapa: stageId,
-        fecha_inicio: startDate,
-        tareas: Array.from(taskIds),
-      }),
-    );
->>>>>>> Stashed changes
 
     if (!etapas.length) {
       setSubmitError("Seleccioná al menos una tarea para crear la obra.");
