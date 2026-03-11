@@ -16,7 +16,7 @@ export const formatDayMonth = (dateString: string) => {
     "JUL","AGO","SEP","OCT","NOV","DIC"
   ];
 
-  const day = date.getDate();
+  const day = date.getUTCDate();
   const month = months[date.getMonth()];
 
   return { day, month };

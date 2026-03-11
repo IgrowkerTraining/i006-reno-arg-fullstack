@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../services/api";
 import { Card } from "../components/common/Card";
-import { BrickWall, CalendarCheck, CheckCircle, ChevronRight, Clock, FileText, Hammer, Home, MapPin, Scan, ShieldCheck, User, XCircle, Zap } from "lucide-react";
+import { CalendarCheck, CheckCircle, ChevronRight, Clock, FileText, Hammer, Home, MapPin, Scan, ShieldCheck, User, XCircle } from "lucide-react";
 import { Button } from "../components/common/Button";
 import { formatDate, formatDayMonth } from "../utils/formateDate";
 import { useAuth } from "../hooks/useAuth";
-import {  toUpperCase } from "../utils/capitalize";
+import { toUpperCase } from "../utils/capitalize";
 import { ProgressBar } from "../components/common/ProgressBar";
 import CardGenerateAI from "../components/common/CardGenerateAI";
+import { ROUTE_BUILDERS } from "../constants/routes";
 
 
 
@@ -25,6 +26,33 @@ const ObraDetalle: React.FC = () => {
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate()
+
+ const handleValidation = async (reportId: number) => {
+  try {
+    await api.updateValidation(reportId, {
+      status: "APROBADO",
+      observations: "Revisión técnica satisfactoria."
+    });
+
+    // actualizar estado local
+    setReports((prevReports) =>
+      prevReports.map((report) =>
+        report.id === reportId
+          ? {
+              ...report,
+              validation: {
+                ...report.validation,
+                status: "APROBADO",
+              },
+            }
+          : report
+      )
+    );
+  } catch (error) {
+    console.error("Error al validar registro", error);
+  }
+};
 
   useEffect(() => {
     if (!obraId) return;
@@ -55,6 +83,7 @@ const ObraDetalle: React.FC = () => {
     </div>
   }
 
+  console.log(reports);
 
 
   return (
@@ -80,8 +109,9 @@ const ObraDetalle: React.FC = () => {
                     <span className="text-xs">{project.manager.license || "Sin matrícula"}</span>
                   </div>
                 </div>
-              </div>            
-                <CardGenerateAI id={project.id}/>
+              </div>
+              {user.idRol === 1 && (
+                <CardGenerateAI id={project.id} />)}
             </Card>
 
             <Card className="p-6 rounded-xl border-neutro-2">
@@ -144,58 +174,48 @@ const ObraDetalle: React.FC = () => {
                 <p>No se encontró información de las etapas</p>
               )}
             </Card>
-
-            <section className="grid grid-cols-1 md:grid-cols-2 items-center gap-6">
-              <Card className="p-6 rounded-xl border-neutro-2 h-full">
-                <div className="md:flex items-center justify-between mb-2">
-                  <h2 className="font-semibold text-xl">
-                    <ShieldCheck className="inline text-secondary w-10" /> Cobertura ART
-                  </h2>
-                  <span
-                    className={`px-3 py-1 text-md flex items-center gap-1 w-fit ${project.config.artCoverageId === 1
-                      ? "text-success"
-                      : "text-accent-2"
-                      }`}
-                  >
-                    {project?.config?.artCoverageId === 1 ? (
-                      <>
-                        VIGENTE <CheckCircle className="w-4 h-4" />
-                      </>
-                    ) : (
-                      <>
-                        NO VIGENTE <XCircle className="w-4 h-4" />
-                      </>
-                    )}
-                  </span>
-                </div>
-                <article className="w-full p-4 rounded-lg bg-secondary/50 my-2">
-                  <p className="font-bold text-md">{project.config.artName}</p>
-                  <p className="text-sm">Cobertura activa para todo el personal</p>
-                </article>
-              </Card>
-              <Card className="p-6 rounded-xl border-neutro-2 h-full">
-
-                <h2 className="font-semibold text-xl">
-                  <Home className="inline text-secondary w-10" /> Oficios en obra
-                </h2>
-                <div className="flex p-4 gap-2">
-                  <span className="rounded-2xl border border-primary py-1 px-3 text-primary font-semibold">
-                    <BrickWall className="inline mr-2 w-4 h-4" /> Albañilería
-                  </span>
-                  <span className="rounded-2xl border border-primary py-1 px-3 text-primary font-semibold">
-                    <Zap className="inline mr-2 w-4 h-4" /> Electricidad
-                  </span>
-                </div>
-
-              </Card>
-            </section>
-            <Card className="p-6 rounded-xl border-neutro-2 min-h-[300px] flex flex-col">
+            <Card className="p-6 rounded-xl border-neutro-2 h-full">
               <div className="md:flex items-center justify-between mb-2">
+                <h2 className="font-semibold text-xl">
+                  <ShieldCheck className="inline text-secondary w-10" /> Cobertura ART
+                </h2>
+                <span
+                  className={`px-3 py-1 text-md flex items-center gap-1 w-fit ${project.config.artCoverageId !== null
+                    ? "text-success"
+                    : "text-accent-2"
+                    }`}
+                >
+                  {project?.config?.artCoverageId !== null ? (
+                    <>
+                      VIGENTE <CheckCircle className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      NO VIGENTE <XCircle className="w-4 h-4" />
+                    </>
+                  )}
+                </span>
+              </div>
+              <article className="w-full py-4 px-6 rounded-lg bg-secondary/50 my-2 ">
+                <p className="font-bold text-md">{project.config.artName}</p>
+                <p className="text-sm">Cobertura activa para todo el personal</p>
+              </article>
+            </Card>
+
+            <Card className="p-6 rounded-xl border-neutro-2 min-h-[300px] flex flex-col">
+              <div className="md:flex items-start justify-between mb-4">
                 <h2 className="font-semibold text-xl">
                   <FileText className="inline text-secondary w-10" /> Registros diarios
                 </h2>
-                <span className="text-sm">Total de registros: {reports?.length} </span>
+
+                {user.idRol === 2 && (
+                  <Button variant="accent" className="text-sm" onClick={() => navigate(ROUTE_BUILDERS.obraRegistro(String(project.id)))}>
+                    Reportar registro
+                  </Button>
+                )}
+
               </div>
+              <p className="text-sm text-right">Total de registros: {reports?.length} </p>
               <ul className="flex flex-col gap-3 my-6 overflow-y-auto flex-1">
                 {reports?.length > 0 ? (
                   reports.map((report) => {
@@ -211,13 +231,21 @@ const ObraDetalle: React.FC = () => {
                             </div>
                             <div className="flex flex-col">
                               <p className="text-md">{report.comment !== "" ? report.comment : "Sin comentarios"}</p>
-                              <p className="text-sm">Supervisor: {report.supervisor.name} <span className={`${report.validation.status === "PENDIENTE" ? "text-accent-2" : "text-primary"} ml-4`}>&bull; {report.validation.status}</span></p>
+                              <p className="text-sm">Supervisor: {report.supervisor.name} <span className={`${report.validation.status === "PENDIENTE" ? "text-accent-2" : "text-secondary-plus"} ml-4`}>&bull; {report.validation.status}</span></p>
                             </div>
                           </div>
                           <div className="flex items-center justify-end gap-4 ">
-                            <Button variant="accent" className="text-sm">VALIDAR REGISTRO</Button>
+                            {user.idRol === 1 && report.validation.status === "PENDIENTE" && (
+                              <Button
+                                variant="accent"
+                                className="text-sm"
+                                onClick={() => handleValidation(report.validation.id)}
+                              >
+                                VALIDAR REGISTRO
+                              </Button>
+                            )}
                             <span className="flex justify-end text-secondary-plus">{Math.round(Number(report.progressPercentage))}%</span>
-                            <ChevronRight className="text-secondary-plus" onClick={()=>{}}/> 
+                            <ChevronRight className="text-secondary-plus" onClick={() => { }} />
                           </div>
                         </li>
                         <hr className="border-neutro-2" />
