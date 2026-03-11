@@ -34,7 +34,7 @@ router.get('/', ReportController.getAllReports);
  * /api/reports/{id}:
  *   get:
  *     summary: Obtener detalle completo de un reporte
- *     description: Retorna toda la información de un reporte específico, incluyendo los listados de tareas, gremios y medidas de seguridad.
+ *     description: Retorna toda la información de un reporte específico.
  *     tags: [Reports]
  *     security:
  *       - bearerAuth: []
@@ -68,7 +68,7 @@ router.get('/:id', ReportController.getReportDetail);
  * /api/reports/setup/{idProject}:
  *   get:
  *     summary: Obtener datos iniciales para el formulario de reporte
- *     description: Recupera las tareas específicas del proyecto y los catálogos globales de oficios y seguridad.
+ *     description: Recupera las tareas específicas del proyecto y de oficios y seguridad.
  *     tags: [Reports]
  *     parameters:
  *       - in: path
@@ -130,7 +130,7 @@ router.post('/', ReportController.createDailyReport);
  * @swagger
  * /api/reports/project/{projectId}:
  *   get:
- *     summary: Obtener historial de reportes de un proyecto
+ *     summary: listado de reportes por id del proyecto
  *     description: Retorna la lista de reportes diarios filtrados por el ID del proyecto, ordenados por fecha descendente.
  *     tags: [Reports]
  *     security:

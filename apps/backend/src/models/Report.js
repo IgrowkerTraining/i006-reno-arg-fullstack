@@ -1,7 +1,7 @@
 const db = require('../config/db');
 class Report {
     constructor(reportData) {
-        this.id = reportData.id || reportData.id_registro_avance;  
+        this.id = reportData.id || reportData.id_registro_avance;
         this.projectId = reportData.projectId || reportData.id_proyecto;
         this.projectName = reportData.projectName;
         this.date = reportData.date || reportData.fecha;
@@ -12,12 +12,16 @@ class Report {
             id: reportData.idSupervisor || reportData.id_supervisor,
             name: reportData.supervisorName
         };
+
         this.validation = {
+           
+            id: reportData.validationId || reportData.id_validacion,
             status: reportData.statusName || reportData.estado || 'PENDIENTE',
             validatedAt: reportData.validationDate || reportData.fecha_validacion,
             technicalComment: reportData.technicalComment || reportData.comentario_tecnico
         };
     }
+
     toJSON() {
         return {
             id: this.id,
@@ -114,24 +118,24 @@ class Report {
         return t.batch(queries);
     }
 
-static async _insertSafety(t, idReport, safetyItems) {
-    if (!safetyItems || safetyItems.length === 0) return;
-    
-    const queries = safetyItems.map(item => {
-    
-        return t.none(
-            `INSERT INTO registro_seguridad 
+    static async _insertSafety(t, idReport, safetyItems) {
+        if (!safetyItems || safetyItems.length === 0) return;
+
+        const queries = safetyItems.map(item => {
+
+            return t.none(
+                `INSERT INTO registro_seguridad 
                 (id_registro_avance, id_medida_seg, cumple) 
-             VALUES ($1, $2, $3)`, 
-            [
-                idReport, 
-                item.id_medida_seg,
-                item.cumple ?? true
-            ]
-        );
-    });
-    return t.batch(queries);
-}
+             VALUES ($1, $2, $3)`,
+                [
+                    idReport,
+                    item.id_medida_seg,
+                    item.cumple ?? true
+                ]
+            );
+        });
+        return t.batch(queries);
+    }
 
     static async getAllReports() {
         return await db.any(`
@@ -153,21 +157,22 @@ static async _insertSafety(t, idReport, safetyItems) {
     static async getReportById(id) {
         const report = await db.oneOrNone(`
         SELECT 
-            r.id_registro_avance AS reportId,
-            r.id_supervisor AS supervisorId,
-            r.id_proyecto AS projectId,
-            r.fecha AS date,
-            r.avance_porcentaje AS progressPercentage,
-            r.comentario AS comment,
-            p.nombre AS projectName,
-            u.nombre AS supervisorName,
-            v.estado AS validationStatus,
-            v.comentario AS technicalComment
-        FROM REGISTRO_AVANCE r
-        JOIN PROYECTO p ON r.id_proyecto = p.id_proyecto
-        JOIN USUARIO u ON r.id_supervisor = u.id_usuario
-        LEFT JOIN VALIDACION_TECNICA v ON r.id_registro_avance = v.id_registro_avance
-        WHERE r.id_registro_avance = $1
+    r.id_registro_avance AS reportId,
+    r.id_supervisor AS supervisorId,
+    r.id_proyecto AS projectId,
+    r.fecha AS date,
+    r.avance_porcentaje AS progressPercentage,
+    r.comentario AS comment,
+    p.nombre AS projectName,
+    u.nombre AS supervisorName,
+    v.id_validacion AS validationId, -- Agregamos el ID solicitado
+    v.estado AS validationStatus,
+    v.comentario AS technicalComment
+FROM REGISTRO_AVANCE r
+JOIN PROYECTO p ON r.id_proyecto = p.id_proyecto
+JOIN USUARIO u ON r.id_supervisor = u.id_usuario
+LEFT JOIN VALIDACION_TECNICA v ON r.id_registro_avance = v.id_registro_avance
+WHERE r.id_registro_avance = $1
     `, [id]);
 
         if (!report) return null;
@@ -180,7 +185,7 @@ static async _insertSafety(t, idReport, safetyItems) {
     }
 
     static async getTasksByReportId(id) {
-    return await db.any(`
+        return await db.any(`
     SELECT 
         tt.nombre as task_name, 
         e.nombre as task_status 
@@ -189,7 +194,7 @@ static async _insertSafety(t, idReport, safetyItems) {
     JOIN TIPO_TAREA tt ON t.id_tipo_tarea = tt.id_tipo_tarea -- Luego al catálogo de nombres
     JOIN ESTADO e ON det.id_estado_tarea = e.id_estado
     WHERE det.id_registro_avance = $1`, [id]);
-}
+    }
 
     static async getTradesByReportId(id) {
         return await db.any(`
@@ -213,8 +218,8 @@ static async _insertSafety(t, idReport, safetyItems) {
     }
 
     static async findByProjectId(projectId) {
-    const query = `
-    SELECT 
+        const query = `
+   SELECT 
     ra.id_registro_avance as id,
     ra.id_proyecto as "projectId",
     p.nombre as "projectName",
@@ -223,6 +228,7 @@ static async _insertSafety(t, idReport, safetyItems) {
     ra.fecha as date,
     ra.avance_porcentaje as "progressPercentage",
     ra.comentario as comment,
+    vt.id_validacion as "validationId", -- Agregamos el ID de validación
     COALESCE(vt.estado, 'PENDIENTE') as "statusName",
     vt.fecha_validacion as "validationDate",
     vt.comentario as "technicalComment"
@@ -231,12 +237,12 @@ JOIN PROYECTO p ON ra.id_proyecto = p.id_proyecto
 JOIN USUARIO u ON ra.id_supervisor = u.id_usuario
 LEFT JOIN VALIDACION_TECNICA vt ON ra.id_registro_avance = vt.id_registro_avance
 WHERE ra.id_proyecto = $1
-ORDER BY ra.fecha DESC;
+ORDER BY ra.fecha DESC
     `;
-    
-    const results = await db.any(query, [projectId]);
-    return results.map(row => new Report(row));
-}
+
+        const results = await db.any(query, [projectId]);
+        return results.map(row => new Report(row));
+    }
 }
 
 module.exports = Report;
