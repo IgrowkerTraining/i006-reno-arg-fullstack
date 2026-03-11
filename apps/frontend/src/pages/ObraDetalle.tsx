@@ -15,7 +15,7 @@ import { ROUTE_BUILDERS } from "../constants/routes";
 
 const statusColors: Record<string, string> = {
   "Pendiente": "border-accent-2 text-accent-2",
-  "Completado": "border",
+  "Finalizado": "border-secondary-plus text-secondary-plus",
 };
 
 
@@ -161,7 +161,8 @@ const ObraDetalle: React.FC = () => {
                         className={`px-4 py-2 text-sm rounded-full font-medium border ${statusColors[stage.statusName]}`}
                       >
                         {toUpperCase(stage.statusName)}
-                        <Clock className="inline ml-2 w-4 h-4" />
+                        {stage.statusName === "Pendiente" ? <Clock className="inline ml-2 w-4 h-4" /> : <CheckCircle className="inline ml-2 w-4 h-4" />}
+                        
                       </span>
                     </div>
 
@@ -251,7 +252,7 @@ const ObraDetalle: React.FC = () => {
                               </Button>
                             )}
                             <span className="flex justify-end text-secondary-plus">{Math.round(Number(report.progressPercentage))}%</span>
-                            <ChevronRight className="text-secondary-plus" onClick={() => { }} />
+                            <ChevronRight className="text-secondary-plus" onClick={() => navigate(`/dashboard/mis-obras/${obraId}/reportes/${report.id}`)} />
                           </div>
                         </li>
                         <hr className="border-neutro-2" />
@@ -263,10 +264,7 @@ const ObraDetalle: React.FC = () => {
                 )}
               </ul>
             </Card>
-
           </div>
-
-
         </>) : (
         <p>Obra no encontrada </p>
       )
