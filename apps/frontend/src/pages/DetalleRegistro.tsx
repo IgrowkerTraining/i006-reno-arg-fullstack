@@ -5,6 +5,7 @@ import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
 import { ROUTE_BUILDERS } from "../constants/routes";
 import { api, ReportDetail } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 
 interface ProjectDetail {
   id: number;
@@ -30,6 +31,7 @@ const formatDate = (value?: string) => {
 };
 
 const DetalleRegistro: React.FC = () => {
+  const { user } = useAuth();
   const { obraId, registroId } = useParams<{ obraId: string; registroId: string }>();
   const navigate = useNavigate();
 
@@ -38,6 +40,18 @@ const DetalleRegistro: React.FC = () => {
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [artCoverages, setArtCoverages] = useState<ArtCoverageOption[]>([]);
+  const [validationId, setValidationId] = useState<number | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const isArchitect = user?.idRol === 1;
+
+  const findValidationIdByReportId = async (reportId: number) => {
+    const validations = await api.getValidations();
+    const currentValidation = validations.find(
+      (item) => Number(item.idRegistroAvance) === Number(reportId),
+    );
+    return currentValidation ? Number(currentValidation.id) : null;
+  };
 
   useEffect(() => {
     if (!obraId || !registroId) return;
@@ -45,6 +59,7 @@ const DetalleRegistro: React.FC = () => {
     const loadDetail = async () => {
       setLoading(true);
       setError(null);
+      setValidationMessage(null);
 
       try {
         const [projectResponse, reportResponse] = await Promise.all([
@@ -60,6 +75,15 @@ const DetalleRegistro: React.FC = () => {
           setArtCoverages(catalog.artsCoverage ?? []);
         } catch {
           setArtCoverages([]);
+        }
+
+        try {
+          const resolvedValidationId = await findValidationIdByReportId(
+            Number(reportResponse?.reportId),
+          );
+          setValidationId(resolvedValidationId);
+        } catch {
+          setValidationId(null);
         }
       } catch (loadError) {
         const message =
@@ -91,6 +115,54 @@ const DetalleRegistro: React.FC = () => {
     navigate(ROUTE_BUILDERS.obraDetalle(obraId));
   };
 
+  const handleValidate = async () => {
+    if (!report) {
+      setValidationMessage("No se encontro el reporte para validar.");
+      return;
+    }
+
+    let currentValidationId = validationId;
+    if (!currentValidationId) {
+      try {
+        currentValidationId = await findValidationIdByReportId(Number(report.reportId));
+        setValidationId(currentValidationId);
+      } catch {
+        currentValidationId = null;
+      }
+    }
+
+    if (!currentValidationId) {
+      setValidationMessage("No se encontro una validacion tecnica asociada a este registro.");
+      return;
+    }
+
+    setIsValidating(true);
+    setValidationMessage(null);
+
+    try {
+      await api.updateValidation(currentValidationId, {
+        status: "APROBADO",
+        observations: "Validado por arquitectura.",
+      });
+
+      if (registroId) {
+        const updatedReport = await api.getReportById(registroId);
+        if (updatedReport) {
+          setReport(updatedReport);
+        }
+      }
+      setValidationMessage("Registro validado correctamente.");
+    } catch (validateError) {
+      const message =
+        validateError instanceof Error
+          ? validateError.message
+          : "No se pudo validar el registro.";
+      setValidationMessage(message);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto w-full max-w-5xl pb-10">
@@ -120,24 +192,56 @@ const DetalleRegistro: React.FC = () => {
         Volver al listado
       </Button>
 
-      <Card className="space-y-3 border-neutro-2 p-5">
-        <div className="flex items-center gap-3">
-          <span className="rounded-full bg-yellow-200 px-3 py-1 text-xs font-semibold text-neutro-1">
-            {project.code}
-          </span>
-          <span className="text-sm text-slate-500">{formatDate(report.date)}</span>
+      <Card className="border-neutro-2 p-5">
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="rounded-full bg-yellow-200 px-3 py-1 text-xs font-semibold text-neutro-1">
+                {project.code}
+              </span>
+              <span className="text-sm text-slate-500">{formatDate(report.date)}</span>
+            </div>
+            <h1 className="text-4xl font-bold text-neutro-1">{project.name}</h1>
+            <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+              <span className="flex items-center gap-1">
+                <MapPin size={14} />
+                {project.location}
+              </span>
+              <span className="flex items-center gap-1">
+                <Maximize2 size={14} />
+                {project.surfaceM2} m2
+              </span>
+            </div>
+          </div>
+          {isArchitect ? (
+            <div className="flex justify-start lg:justify-end lg:pr-6">
+              <Button
+                type="button"
+                variant="accent"
+                className="min-w-[170px] px-10 py-4 text-base font-extrabold"
+              onClick={() => void handleValidate()}
+              disabled={
+                isValidating ||
+                report.validationStatus === "APROBADO"
+              }
+              isLoading={isValidating}
+            >
+                VALIDAR
+              </Button>
+            </div>
+          ) : null}
         </div>
-        <h1 className="text-4xl font-bold text-neutro-1">{project.name}</h1>
-        <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-          <span className="flex items-center gap-1">
-            <MapPin size={14} />
-            {project.location}
-          </span>
-          <span className="flex items-center gap-1">
-            <Maximize2 size={14} />
-            {project.surfaceM2} m2
-          </span>
-        </div>
+        {validationMessage ? (
+          <p
+            className={`text-sm ${
+              report.validationStatus === "APROBADO"
+                ? "text-green-700"
+                : "text-amber-700"
+            }`}
+          >
+            {validationMessage}
+          </p>
+        ) : null}
       </Card>
 
       <Card className="border-neutro-2 p-0">

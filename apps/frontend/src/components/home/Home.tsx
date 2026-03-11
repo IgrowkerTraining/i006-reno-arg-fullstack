@@ -177,9 +177,15 @@ const Home: React.FC = () => {
 
                   <ul className="space-y-3 mt-4 ml-10">
                     {items.map((item) => (
-                      <React.Fragment key={item.id}>
+                      <React.Fragment key={`${item.project_id}-${item.id}`}>
                         <li >
-                          <Link to={ROUTE_BUILDERS.obraDetalle(item.id.toString())} className="grid grid-cols-4 items-end gap-5">
+                          <Link
+                            to={ROUTE_BUILDERS.obraRegistroDetalle(
+                              item.project_id.toString(),
+                              item.id.toString(),
+                            )}
+                            className="grid grid-cols-4 items-end gap-5"
+                          >
 
                             <div className="col-span-3 gap-3">
                               {/*  <p className="text-xs text-primary">
