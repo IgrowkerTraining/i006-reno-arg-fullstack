@@ -30,12 +30,13 @@ const { verifyToken } = require('../middleware/authMiddleware');
  *                 $ref: '#/components/schemas/Validation'
  */
 router.get('/', verifyToken, ValidationController.getAllValidations);
+
 /**
  * @swagger
  * /api/validations/{id}:
  *   patch:
  *     summary: Actualizar estado de una validación técnica
- *     description: Permite aprobar o rechazar un reporte. El ID del responsable se obtiene automáticamente del token.
+ *     description: Permite aprobar o rechazar un reporte.
  *     tags: [Validations]
  *     security:
  *       - bearerAuth: []
