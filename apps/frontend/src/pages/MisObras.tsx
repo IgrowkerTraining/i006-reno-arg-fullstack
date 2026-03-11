@@ -66,7 +66,7 @@ const MisObras: React.FC = () => {
       <section className="flex gap-4 overflow-x-auto py-4">
         {filteredProjects && filteredProjects.length > 0 ? (
           filteredProjects.map((obra) => (
-            <React.fragment key={obra.id}>
+            <React.Fragment key={obra.id}>
               <CardObra
                 codigo={obra.code}
                 titulo={obra.name}
@@ -81,7 +81,7 @@ const MisObras: React.FC = () => {
                 onRegistro={() => navigate(ROUTE_BUILDERS.obraRegistro(String(obra.id)))}
                 user={user}
               />
-            </React.fragment>
+            </React.Fragment>
           ))
         ) : (
           <p className="col-span-2 text-slate-500">No se encontraron obras vinculadas a tu cuenta.</p>
