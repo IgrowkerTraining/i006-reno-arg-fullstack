@@ -26,33 +26,38 @@ const ObraDetalle: React.FC = () => {
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(false);
 
+  const [validatingId, setValidatingId] = useState<number | null>(null);
+
   const navigate = useNavigate()
 
- const handleValidation = async (reportId: number) => {
-  try {
-    await api.updateValidation(reportId, {
-      status: "APROBADO",
-      observations: "Revisión técnica satisfactoria."
-    });
+  const handleValidation = async (validationId: number) => {
+    try {
+      setValidatingId(validationId);
 
-    // actualizar estado local
-    setReports((prevReports) =>
-      prevReports.map((report) =>
-        report.id === reportId
-          ? {
+      await api.updateValidation(validationId, {
+        status: "APROBADO",
+        observations: "Revisión técnica satisfactoria."
+      });
+
+      setReports((prevReports) =>
+        prevReports.map((report) =>
+          report.validation.id === validationId
+            ? {
               ...report,
               validation: {
                 ...report.validation,
                 status: "APROBADO",
               },
             }
-          : report
-      )
-    );
-  } catch (error) {
-    console.error("Error al validar registro", error);
-  }
-};
+            : report
+        )
+      );
+
+    } finally {
+      setValidatingId(null);
+    }
+  };
+
 
   useEffect(() => {
     if (!obraId) return;
@@ -239,9 +244,10 @@ const ObraDetalle: React.FC = () => {
                               <Button
                                 variant="accent"
                                 className="text-sm"
+                                disabled={validatingId === report.validation.id}
                                 onClick={() => handleValidation(report.validation.id)}
                               >
-                                VALIDAR REGISTRO
+                                {validatingId === report.validation.id ? "VALIDANDO..." : "VALIDAR REGISTRO"}
                               </Button>
                             )}
                             <span className="flex justify-end text-secondary-plus">{Math.round(Number(report.progressPercentage))}%</span>
