@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { Card } from '../components/common/Card';
 import { Input } from '../components/common/Input';
 import { formatDate } from '../utils/formateDate';
+import { Button } from '../components/common/Button';
 
 const ReporteIAObraHistorial: React.FC = () => {
 
@@ -27,11 +28,8 @@ const ReporteIAObraHistorial: React.FC = () => {
             try {
                 setIsLoading(true);
                 const IAReportHistory = await api.getIAReportsByProjectId(obraId);
-
-                console.log("IAReportHistory.data", IAReportHistory.data);
                 setIaReports(IAReportHistory.data);
             } catch (error) {
-                console.error("Error cargando historial IA:", error);
                 setIaReports([]);
             } finally {
                 setIsLoading(false);
@@ -65,10 +63,10 @@ const ReporteIAObraHistorial: React.FC = () => {
     });
 
 
-
     return (
         <div>
-            <h3 className="flex items-center gap-2 text-secondary-plus font-bold text-xl mt-6"><Flower size={20} /> HISTORIAL DE REPORTES IA</h3>
+            <Button variant="ghost" className="mt-2 text-md pl-0 " onClick={() => navigate(-1)}> ← Volver</Button>
+            <h3 className="flex items-center gap-2 text-secondary-plus font-bold text-xl mt-2"><Flower size={20} /> HISTORIAL DE REPORTES IA</h3>
             <section className="mt-6 ">
                 {proyecto && (
                     <>

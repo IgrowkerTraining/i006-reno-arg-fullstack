@@ -163,12 +163,10 @@ const DetalleRegistro: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="mx-auto w-full max-w-5xl pb-10">
-        <p className="text-sm text-slate-500">Cargando detalle del registro...</p>
-      </div>
-    );
+if (loading) {
+    return <div className="flex items-center justify-center h-[650px]">
+      <p className="text-xl font-medium text-primary">Cargando detalle de registro diario...</p>
+    </div>
   }
 
   if (error || !project || !report) {
@@ -176,9 +174,9 @@ const DetalleRegistro: React.FC = () => {
       <div className="mx-auto w-full max-w-5xl pb-10 space-y-4">
         <Button type="button" variant="ghost" onClick={handleBack}>
           <ChevronLeft size={16} className="mr-1" />
-          Volver al listado
+          Volver
         </Button>
-        <Card className="border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <Card className="border-red-200 bg-red-50 p-4 text-sm text-red-700 ">
           {error ?? "No se encontro el detalle solicitado."}
         </Card>
       </div>
@@ -187,12 +185,12 @@ const DetalleRegistro: React.FC = () => {
 
   return (
     <div className="mx-auto w-full max-w-5xl pb-10 space-y-4">
-      <Button type="button" variant="ghost" onClick={handleBack}>
+      <Button type="button" variant="ghost" onClick={handleBack} className="pl-0"> 
         <ChevronLeft size={16} className="mr-1" />
-        Volver al listado
+        Volver
       </Button>
-
-      <Card className="border-neutro-2 p-5">
+      <h4 className="text-neutro-2 text-lg">DETALLE DE REGISTRO DIARIO</h4>
+      <Card className="p-8 rounded-xl border-neutro-2 bg-white">
         <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
@@ -218,37 +216,36 @@ const DetalleRegistro: React.FC = () => {
               <Button
                 type="button"
                 variant="accent"
-                className="min-w-[170px] px-10 py-4 text-base font-extrabold"
-              onClick={() => void handleValidate()}
-              disabled={
-                isValidating ||
-                report.validationStatus === "APROBADO"
-              }
-              isLoading={isValidating}
-            >
-                VALIDAR
+                className="min-w-[170px] px-8 py-2 text-base font-extrabold"
+                onClick={() => void handleValidate()}
+                disabled={
+                  isValidating ||
+                  report.validationStatus === "APROBADO"
+                }
+                isLoading={isValidating}
+              >
+                VALIDAR REGISTRO
               </Button>
             </div>
           ) : null}
         </div>
         {validationMessage ? (
           <p
-            className={`text-sm ${
-              report.validationStatus === "APROBADO"
+            className={`text-sm ${report.validationStatus === "APROBADO"
                 ? "text-green-700"
                 : "text-amber-700"
-            }`}
+              }`}
           >
             {validationMessage}
           </p>
         ) : null}
       </Card>
 
-      <Card className="border-neutro-2 p-0">
-        <div className="border-b border-neutro-2 px-5 py-4">
+      <Card className="p-0 rounded-xl border-neutro-2 bg-white">
+        <div className="border-b border-neutro-2 px-8 py-5">
           <h2 className="text-xl font-semibold text-neutro-1">Tareas realizadas</h2>
         </div>
-        <div className="space-y-4 p-5">
+        <div className="space-y-4 px-8 py-5">
           {report.tasks?.length ? (
             report.tasks.map((task, index) => (
               <div key={`${task.task_name}-${index}`} className="flex items-center justify-between">
@@ -267,8 +264,8 @@ const DetalleRegistro: React.FC = () => {
         </div>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="space-y-4 border-neutro-2 p-5">
+      <div className="grid gap-4 lg:grid-cols-2 ">
+        <Card className="space-y-4 border-neutro-2 p-5 p-8 rounded-xl bg-white">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-semibold text-neutro-1">Cobertura ART</h3>
             <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
@@ -282,18 +279,17 @@ const DetalleRegistro: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="space-y-4 border-neutro-2 p-5">
+        <Card className="space-y-4 border-neutro-2 p-8 rounded-xl bg-white">
           <h3 className="text-xl font-semibold text-neutro-1">Seguridad e higiene</h3>
           <div className="space-y-2">
             {report.safety?.length ? (
               report.safety.map((item, index) => (
                 <div
                   key={`${item.safety_description}-${index}`}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
-                    item.status
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${item.status
                       ? "border-green-200 bg-green-50 text-green-700"
                       : "border-amber-300 bg-amber-50 text-amber-700"
-                  }`}
+                    }`}
                 >
                   <span>{item.safety_description}</span>
                   {item.status ? "Cumple" : "Observado"}

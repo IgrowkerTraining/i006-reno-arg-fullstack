@@ -61,12 +61,8 @@ export interface PlanningCatalogResponse {
 
 export interface DailyReport {
   id: number;
-<<<<<<< Updated upstream
-  project_id: number;
-=======
   project_id?: number;
   projectId?: number;
->>>>>>> Stashed changes
   date: string;
   project_name: string;
   supervisor: string;
