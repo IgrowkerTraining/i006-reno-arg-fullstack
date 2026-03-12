@@ -10,8 +10,7 @@ const ReporteIA: React.FC = () => {
   const { analysis, month, year } = location.state || {};
 
   useEffect(() => {
-    console.log("desde reporteIAobra", analysis);
-    
+     
     if (analysis) {
       setDataAnalysis(analysis)
     }

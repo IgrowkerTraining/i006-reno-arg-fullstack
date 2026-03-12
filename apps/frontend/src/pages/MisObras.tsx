@@ -49,8 +49,6 @@ const MisObras: React.FC = () => {
     </div>
   }
 
-  console.log(projects[0]);
-
 
   return (
     <>
