@@ -131,19 +131,37 @@ class Report {
     }
     static async getAllReports() {
         return await db.any(`
-        SELECT 
-            r.id_registro_avance as id,
-            (r.fecha AT TIME ZONE 'America/Argentina/Buenos_Aires')::date AS date,
-            p.nombre as project_name,
-            u.nombre as supervisor,
-            r.avance_porcentaje as progress_percentage,
-            r.comentario as comment,
-            v.estado as validation_status
-        FROM REGISTRO_AVANCE r
-        JOIN PROYECTO p ON r.id_proyecto = p.id_proyecto
-        JOIN USUARIO u ON r.id_supervisor = u.id_usuario
-        LEFT JOIN VALIDACION_TECNICA v ON r.id_registro_avance = v.id_registro_avance
-        ORDER BY r.fecha DESC;
+   SELECT 
+    r.id_registro_avance AS id,
+    -- Forzamos la conversión a texto con el formato exacto para evitar redondeos del servidor
+    TO_CHAR(r.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') AS date,
+    p.nombre AS project_name,
+    p.ubicacion AS address_project,
+    MAX(te.nombre) AS stage_name, 
+    string_agg(tt.nombre, ', ') AS task_name, 
+    u.nombre AS supervisor,
+    r.avance_porcentaje AS progress_percentage,
+    COALESCE(NULLIF(r.comentario, ''), 'Sin observaciones') AS comment,
+    v.estado AS validation_status
+FROM REGISTRO_AVANCE r
+JOIN PROYECTO p ON r.id_proyecto = p.id_proyecto
+JOIN USUARIO u ON r.id_supervisor = u.id_usuario
+JOIN detalle_avance_tarea rat ON r.id_registro_avance = rat.id_registro_avance
+JOIN TAREA t ON rat.id_tarea = t.id_tarea
+JOIN TIPO_TAREA tt ON t.id_tipo_tarea = tt.id_tipo_tarea
+JOIN ETAPA e ON t.id_etapa = e.id_etapa
+JOIN TIPO_ETAPA te ON e.id_tipo_etapa = te.id_tipo_etapa
+LEFT JOIN VALIDACION_TECNICA v ON r.id_registro_avance = v.id_registro_avance
+GROUP BY 
+    r.id_registro_avance, 
+    r.fecha, -- Fundamental incluir la fecha original aquí
+    p.nombre, 
+    p.ubicacion, 
+    u.nombre, 
+    r.avance_porcentaje, 
+    r.comentario, 
+    v.estado
+ORDER BY r.fecha DESC;
     `);
     }
     static async getReportById(id) {
