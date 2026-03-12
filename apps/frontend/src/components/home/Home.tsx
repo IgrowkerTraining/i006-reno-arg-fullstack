@@ -18,7 +18,7 @@ const DATA = [
   { key: "activeProjects", icon: ChartNoAxesCombined, title: "Obras activas", color: "secondary" },
   { key: "artVigente", icon: ShieldCheck, title: "ART-vigente", color: "accent" },
   { key: "pendingTasks", icon: ClockAlert, title: "Tareas pendientes", color: "primary" },
-  { key: "validatedProjects", icon: ListChecks, title: "Obras validadas", color: "accent-2" },
+  { key: "validatedProjects", icon: ListChecks, title: "Registros validados", color: "accent-2" },
 ];
 
 const Home: React.FC = () => {
