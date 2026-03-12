@@ -218,17 +218,17 @@ const Home: React.FC = () => {
                             onClick={(event) => void handleHistoryClick(event, item)}
                             className="grid grid-cols-4 items-end gap-5"
                           >
-
                             <div className="col-span-3 gap-3">
-                              {/*  <p className="text-xs text-primary">
-                              ETAPA {item.workStage.toUpperCase()}
-                            </p> */}
+                               <p className="text-xs text-primary">
+                              ETAPA {item.stage_name}
+                            </p>
                               <p className="text-[20px] font-bold">{item.comment}</p>
                               <p className="text-sm font-bold">{item.project_name}</p>
-                              <p className="text-xs font-light">Supervisor:{item.supervisor}</p>
+                              <p className="text-xs font-light">{item.address_project}</p>
                             </div>
 
                             <div className="col-span-1 text-right">
+                              <span className={`text-xs ${item.validation_status === "PENDIENTE" ? "text-accent-2" : "text-secondary-plus"} ml-4`}>&bull; {item.validation_status}</span>
                               <p className="text-xs text-primary">
                                 Avance total de obra
                               </p>
