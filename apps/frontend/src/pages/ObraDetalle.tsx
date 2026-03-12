@@ -136,9 +136,9 @@ const ObraDetalle: React.FC = () => {
               <div className="w-3/4  ">
                 <div className="flex justify-between text-sm font-semibold my-2">
                   <span className="">Obra gruesa</span>
-                  <span>{20}%</span>
+                  <span>{Math.round(project.progress || 0)}%</span>
                 </div>
-                <ProgressBar value={20} />
+                <ProgressBar value={Math.round(project.progress || 0)} />
               </div>
             </Card>
             <Card className="p-6 rounded-xl border-neutro-2">
@@ -235,7 +235,7 @@ const ObraDetalle: React.FC = () => {
                               <span className="text-[12px]">{month}</span>
                             </div>
                             <div className="flex flex-col">
-                              <p className="text-md">{report.comment !== "" ? report.comment : "Sin comentarios"}</p>
+                              <p className="text-md">{report.comment && report.comment.trim() !== "" ? report.comment : "Sin observaciones"}</p>
                               <p className="text-sm">Supervisor: {report.supervisor.name} <span className={`${report.validation.status === "PENDIENTE" ? "text-accent-2" : "text-secondary-plus"} ml-4`}>&bull; {report.validation.status}</span></p>
                             </div>
                           </div>

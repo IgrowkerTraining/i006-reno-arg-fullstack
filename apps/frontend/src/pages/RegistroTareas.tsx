@@ -8,6 +8,7 @@ import { getReportDraft, saveReportDraft } from "../utils/reportDraft";
 type ChecklistOption = {
   id: string;
   label: string;
+  completed?: boolean;
 };
 
 const FALLBACK_TAREAS: ChecklistOption[] = [
@@ -48,64 +49,66 @@ const RegistroTareas = () => {
   const [tareasSeleccionadas, setTareasSeleccionadas] = useState<string[]>([]);
   const [oficiosSeleccionados, setOficiosSeleccionados] = useState<string[]>([]);
   const [setupError, setSetupError] = useState("");
+  const [progresoActual, setProgresoActual] = useState<number>(0);
+  const [nombreObra, setNombreObra] = useState<string>("Cargando obra...");
 
   useEffect(() => {
-    if (!obraId) return;
+  if (!obraId) return;
 
-    const loadSetup = async () => {
-      const draft = getReportDraft(obraId);
+ const loadSetup = async () => {
+  try {
+    const setup = await api.getReportSetup(obraId);
+    console.log("Data del setup:", setup)
+    if (setup) {
+      setNombreObra(setup.projectName || "Avance de obra");
+    }
 
-      setTareasSeleccionadas(draft.selectedTasks ?? []);
-      setOficiosSeleccionados(draft.selectedTrades ?? []);
+    if (Array.isArray(setup?.tasks)) {
+      const backendTaskOptions: ChecklistOption[] = [];
+      const yaTerminadas: string[] = [];
 
-      try {
-        const setup = await api.getReportSetup(obraId);
-
-        if (Array.isArray(setup?.tasks)) {
-          const backendTaskOptions: ChecklistOption[] = [];
-
-          setup.tasks.forEach((stage: any) => {
-            stage.tareas?.forEach((task: any) => {
-              backendTaskOptions.push({
-                id: String(task.id_tarea),
-                label: task.nombre_tarea,
-              });
-            });
+      setup.tasks.forEach((stage: any) => {
+        stage.tasks?.forEach((task: any) => {
+          const taskId = String(task.id_task);
+          const isCompleted = task.id_status === 3;
+          backendTaskOptions.push({
+            id: taskId,
+            label: task.task_name,
+            completed: isCompleted,
           });
+          if (isCompleted) yaTerminadas.push(taskId);
+        });
+      });
 
-          if (backendTaskOptions.length) {
-            const uniqueTasks = backendTaskOptions.filter(
-              (option, index, source) =>
-                source.findIndex((item) => item.id === option.id) === index
-            );
-            setTareasOptions(uniqueTasks);
-          } else {
-            setTareasOptions(FALLBACK_TAREAS);
-          }
-        } else {
-          setTareasOptions(FALLBACK_TAREAS);
-        }
+      setTareasOptions(backendTaskOptions.length ? backendTaskOptions : FALLBACK_TAREAS);
+      
+  
+      const draft = getReportDraft(obraId);
+      const mergedTasks = Array.from(new Set([...(draft.selectedTasks ?? []), ...yaTerminadas]));
+      setTareasSeleccionadas(mergedTasks);
+    }
+    if (Array.isArray(setup?.trades) && setup.trades.length > 0) {
+      const mappedTrades = setup.trades.map((trade: any) => ({
+        id: String(trade.id_trade),
+        label: trade.name,
+      }));
+      setOficiosOptions(mappedTrades);
+    } else {
+      setOficiosOptions(FALLBACK_OFICIOS);
+    }
+    const draft = getReportDraft(obraId);
+    setOficiosSeleccionados(draft.selectedTrades ?? []);
 
-        if (Array.isArray(setup?.trades) && setup.trades.length) {
-          setOficiosOptions(
-            setup.trades.map((trade: any) => ({
-              id: String(trade.id_trade),
-              label: trade.name,
-            }))
-          );
-        } else {
-          setOficiosOptions(FALLBACK_OFICIOS);
-        }
-      } catch {
-        setSetupError("No se pudo cargar el formulario.");
-        setTareasOptions(FALLBACK_TAREAS);
-        setOficiosOptions(FALLBACK_OFICIOS);
-      }
-    };
+  } catch (error) {
+    console.error("Error en setup:", error);
+    setSetupError("No se pudo cargar el formulario.");
+    setTareasOptions(FALLBACK_TAREAS);
+    setOficiosOptions(FALLBACK_OFICIOS);
+  }
+};
 
-    loadSetup();
-  }, [obraId]);
-
+  loadSetup();
+}, [obraId]);
   if (!obraId) return null;
 
   const toggleTarea = (id: string) => {
@@ -141,10 +144,10 @@ const RegistroTareas = () => {
           <div className="flex items-start justify-between bg-primary px-8 py-6 text-white md:px-10">
             <div>
               <h1 className="text-3xl font-semibold leading-tight">
-                Reforma Vivienda Familiar
+               {nombreObra}
               </h1>
               <p className="mt-1 text-sm font-normal opacity-95">
-                Registro diario de obra 13/02/26
+                Registro diario de obra {new Date().toLocaleDateString('es-AR')}
               </p>
             </div>
 
@@ -202,19 +205,28 @@ const RegistroTareas = () => {
                 <div className="grid grid-cols-1 gap-x-20 gap-y-6 md:grid-cols-2">
                   {tareasOptions.map((tarea) => {
                     const checked = tareasSeleccionadas.includes(tarea.id);
+                    const finished = tarea.completed; 
 
                     return (
                       <label
                         key={tarea.id}
-                        className="flex min-h-[44px] cursor-pointer items-center gap-4 text-[18px] font-medium text-slate-800"
-                      >
+                        className={`flex min-h-[44px] items-center gap-4 text-[18px] font-medium transition-all
+                ${finished 
+                  ? "cursor-not-allowed text-slate-400" 
+                  : "cursor-pointer text-slate-800 hover:text-primary"
+                }`}
+            >
                         <input
-                          type="checkbox"
+                        type="checkbox"
                           checked={checked}
-                          onChange={() => toggleTarea(tarea.id)}
-                          className="h-7 w-7 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <span>{tarea.label}</span>
+                disabled={finished} 
+                onChange={() => toggleTarea(tarea.id)}
+                className="h-7 w-7 rounded border-gray-300 text-primary focus:ring-primary 
+                           disabled:bg-slate-100 disabled:text-slate-400"
+              />
+              <span className={finished ? "line-through opacity-70" : ""}>
+                {tarea.label}
+                </span>
                       </label>
                     );
                   })}

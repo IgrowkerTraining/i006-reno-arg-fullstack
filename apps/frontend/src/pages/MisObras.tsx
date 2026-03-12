@@ -73,7 +73,7 @@ const MisObras: React.FC = () => {
               fechaInicio={obra.registrationDate}
               artStatus="ok"
               seguridadStatus="ok"
-              progreso={45}
+              progreso={Math.round(obra.progress || 0)}
               responsable={obra.manager?.name || "Sin responsable asignado"}
               matricula={obra.manager?.license || "Sin matrícula"}
               onDetalle={() => navigate(ROUTE_BUILDERS.obraDetalle(String(obra.id)))}

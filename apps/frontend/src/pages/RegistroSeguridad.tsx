@@ -204,8 +204,8 @@ const RegistroSeguridad = () => {
             </div>
 
             <div className="text-right">
-              <p className="text-4xl font-semibold leading-none">45%</p>
-              <p className="mt-2 text-sm uppercase opacity-95">Avance actual</p>
+              <p className="text-4xl font-semibold leading-none"></p>
+              <p className="mt-2 text-sm uppercase opacity-95">Registro diario de obra {new Date().toLocaleDateString('es-AR')}</p>
             </div>
           </div>
 
