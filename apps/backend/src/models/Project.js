@@ -8,6 +8,7 @@ class Project {
     this.location = data.location;
     this.surfaceM2 = parseFloat(data.surfaceM2) || 0;
     this.registrationDate = data.registrationDate;
+    this.progress = parseFloat(data.projectProgress || data.project_progress || data.progress || 0);
 
     this.manager = data.manager || {
       id: data.idResponsable,
@@ -34,6 +35,7 @@ class Project {
       location: this.location,
       surfaceM2: this.surfaceM2,
       registrationDate: this.registrationDate,
+      progress: this.progress,
       manager: this.manager,
       config: this.config,
       stages: this.stages 
@@ -48,13 +50,18 @@ class Project {
             p.nombre as name,
             p.ubicacion as location,
             p.superficie_m2 as "surfaceM2",
-            TO_CHAR(p.fecha_registro, 'YYYY-MM-DD') as "registrationDate",
+            TO_CHAR(p.fecha_registro AT TIME ZONE 'UTC' AT TIME ZONE'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') as "registrationDate",
+            COALESCE(
+                (SELECT ROUND(AVG(progreso), 2) 
+                 FROM ETAPA 
+                 WHERE id_proyecto = p.id_proyecto), 
+            0) as "projectProgress",
+
             json_build_object(
                 'id', u.id_usuario,
                 'name', u.nombre,
                 'license', u.matricula
             ) as manager,
-            -- Objeto de configuración (Config) con Nombres
             json_build_object(
                 'constructionSystemId', p.id_sistema_constructivo,
                 'constructionSystemName', sc.nombre,
@@ -71,8 +78,8 @@ class Project {
 
     const results = await db.any(sql);
     return results.map(row => new Project(row));
-  }
-  static async findById(id) {
+}
+static async findById(id) {
     const sql = `
       SELECT 
         p.id_proyecto as id,
@@ -80,34 +87,37 @@ class Project {
         p.nombre as name,
         p.ubicacion as location,
         p.superficie_m2 as "surfaceM2",
-        p.fecha_registro as "registrationDate",
-        -- Objeto Manager con Licencia
+        TO_CHAR(p.fecha_registro AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') as "registrationDate",
+        COALESCE(
+          (SELECT ROUND(AVG(progreso), 2) 
+           FROM ETAPA 
+           WHERE id_proyecto = p.id_proyecto), 
+        0) as "projectProgress",
+
         json_build_object(
           'id', u.id_usuario,
           'name', u.nombre,
           'license', u.matricula
         ) as manager,
-        -- Objeto Config
         json_build_object(
           'constructionSystemId', p.id_sistema_constructivo,
           'constructionSystemName', sc.nombre,
           'artCoverageId', p.id_art,
           'artName', ca.nombre_entidad_art
         ) as config,
-        -- Subconsulta para ETAPAS y TAREAS
         COALESCE(
           (SELECT json_agg(etapa_data)
            FROM (
              SELECT 
                e.id_etapa as id,
                e.id_proyecto as "projectId",
+               e.progreso as progreso,
                e.id_tipo_etapa as "typeStageId",
-               e.fecha_inicio as "startDate",
-               e.fecha_fin as "endDate",
+               TO_CHAR(e.fecha_inicio AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') as "startDate",
+               TO_CHAR(e.fecha_fin AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') as "endDate",
                e.id_estado as "statusId",
                te.nombre as "typeName",
-               es.nombre as "statusName",
-               -- Subconsulta para TAREAS dentro de la etapa
+               es.nombre as "statusName",             
                COALESCE(
                  (SELECT json_agg(tarea_data)
                   FROM (
@@ -122,6 +132,7 @@ class Project {
                     JOIN TIPO_TAREA tt ON t.id_tipo_tarea = tt.id_tipo_tarea
                     JOIN ESTADO est ON t.id_estado = est.id_estado
                     WHERE t.id_etapa = e.id_etapa
+                    ORDER BY t.id_tarea ASC
                   ) tarea_data), 
                  '[]'::json
                ) as tasks
@@ -140,12 +151,11 @@ class Project {
       LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
       WHERE p.id_proyecto = $1;
     `;
-
     try {
         const project = await db.oneOrNone(sql, [id]);
         return project ? new Project(project) : null;
     } catch (error) {
-        console.error("❌ Error en findById:", error.message);
+        console.error("Error en findById:", error.message);
         throw error;
     }
 }
@@ -219,7 +229,7 @@ class Project {
   static async getDataProjectReport(projectId, month, year) {
     return await db.any(`
         SELECT 
-            TO_CHAR(r.fecha, 'YYYY-MM-DD') AS report_date,
+            TO_CHAR(r.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') AS report_date,
             r.avance_porcentaje AS progress,
             r.comentario AS supervisor_notes,
             (SELECT string_agg(t.nombre, ', ') 
@@ -247,15 +257,15 @@ class Project {
         SELECT 
     p.id_proyecto, 
     p.nombre AS proyecto_nombre, 
-    TO_CHAR(p.fecha_registro, 'YYYY-MM-DD') AS fecha_registro,
-    ca.nombre_entidad_art AS nombre_art, -- Ahora viene de 'ca' (CAT_ART)
+    TO_CHAR(p.fecha_registro AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') AS fecha_registro,
+    ca.nombre_entidad_art AS nombre_art,
     u.nombre AS creador_nombre,
     r.nombre AS creador_rol_nombre,
     u.id_rol AS creador_rol_id
 FROM PROYECTO p
 JOIN USUARIO u ON p.id_responsable = u.id_usuario
 LEFT JOIN COBERTURA_ART c ON p.id_art = c.id_art
-LEFT JOIN CAT_ART ca ON c.id_cat_art = ca.id_cat_art -- El nuevo JOIN necesario
+LEFT JOIN CAT_ART ca ON c.id_cat_art = ca.id_cat_art
 LEFT JOIN ROL r ON u.id_rol = r.id_rol
 WHERE p.id_proyecto = $1
     `, [projectId]);
@@ -273,7 +283,6 @@ WHERE p.id_proyecto = $1
         FROM proyecto;
     `;
     return await db.one(sql);
-    console.error("Error countArtActive:", error.message);
   }
 
   static async getSnapshotDataForAI(projectId, month, year) {
@@ -286,7 +295,8 @@ WHERE p.id_proyecto = $1
       p.nombre AS project_name,
       u_resp.nombre AS responsible_technician,
       ra.id_registro_avance AS report_id,
-      TO_CHAR(ra.fecha, 'DD-MM-YYYY') AS report_date,
+      TO_CHAR(ra.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'DD-MM-YYYY') AS report_date,
+      ra.avance_porcentaje AS report_progress,
       u_sup.nombre AS supervisor_name,
       te.nombre AS stage_name,
       e.progreso AS stage_progress,
@@ -323,85 +333,87 @@ WHERE p.id_proyecto = $1
     const snapshotData = this._formatSnapshotJSON(rows, startDate, endDate);
     return snapshotData;
 
-
   }
-  static _formatSnapshotJSON(rows, startDate, endDate) {
-    if (!rows || rows.length === 0) return null;
+static _formatSnapshotJSON(rows, startDate, endDate) {
+  if (!rows || rows.length === 0) return null;
 
-    const formatDate = (dateStr) => {
-      if (!dateStr) return null;
-      const [day, month, year] = dateStr.split('-');
-      return `${year}-${month}-${day}`;
-    };
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [day, month, year] = dateStr.split('-');
+    return `${year}-${month}-${day}`;
+  };
 
-    const fixProjectCode = (code) => {
-      const parts = code.split('-');
-      const lastPart = parts[parts.length - 1].padStart(3, '0');
-      return `RENO-AR-2026-${lastPart}`;
-    };
+  const fixProjectCode = (code) => {
+    const parts = code.split('-');
+    const lastPart = parts[parts.length - 1].padStart(3, '0');
+    return `RENO-AR-2026-${lastPart}`;
+  };
 
-    const reportsMap = new Map();
+  const reportsMap = new Map();
+  let maxProgressFound = 0;
 
-    rows.forEach(row => {
-      if (!reportsMap.has(row.report_id)) {
-        reportsMap.set(row.report_id, {
-          fecha: formatDate(row.report_date),
-          supervisor: row.supervisor_name || "Sin asignar",
-          tareas_ejecutadas: new Set(),
-          oficios_activos: new Set(),
-          porcentaje_avance: row.stage_progress || 0
-        });
+  rows.forEach(row => {
+    const rawProgress = parseFloat(row.report_progress || row.stage_progress || 0);
+    const currentProgress = Math.round(rawProgress);
+    if (currentProgress > maxProgressFound) maxProgressFound = currentProgress;
+
+    if (!reportsMap.has(row.report_id)) {
+      reportsMap.set(row.report_id, {
+        fecha: formatDate(row.report_date),
+        supervisor: row.supervisor_name || "Sin asignar",
+        tareas_ejecutadas: new Set(),
+        oficios_activos: new Set(),
+        porcentaje_avance: currentProgress
+      });
+    }
+    const report = reportsMap.get(row.report_id);
+    if (row.task_name) report.tareas_ejecutadas.add(row.task_name);
+    if (row.trade_name) report.oficios_activos.add(row.trade_name);
+  });
+
+  const registrosAvanceArray = Array.from(reportsMap.values()).map(r => ({
+    ...r,
+    tareas_ejecutadas: r.tareas_ejecutadas.size > 0 ? Array.from(r.tareas_ejecutadas) : ["Supervisión de obra"],
+    oficios_activos: r.oficios_activos.size > 0 ? Array.from(r.oficios_activos) : ["Personal técnico"]
+  }));
+
+  const lastRow = rows[rows.length - 1];
+  const todasLasMedidas = [...new Set(rows.map(r => r.safety_measure).filter(Boolean))];
+  const etapaSegura = lastRow.stage_name || "Etapa General";
+  const estadoSeguro = maxProgressFound > 0 ? "EN_CURSO" : (lastRow.validation_status || "PENDIENTE");
+
+  return {
+    project: {
+      codigo: fixProjectCode(lastRow.project_code),
+      nombre: lastRow.project_name || "Proyecto sin nombre",
+      responsable_tecnico: lastRow.responsible_technician || "No asignado"
+    },
+    periodo: {
+      desde: startDate,
+      hasta: endDate
+    },
+    etapas: {
+      nombre: etapaSegura,
+      estado: estadoSeguro,
+      avance_estimado: maxProgressFound 
+    },
+    registros_avance: registrosAvanceArray,
+    medidas_seguridad: {
+      fecha: formatDate(lastRow.report_date),
+      implementadas: todasLasMedidas.length > 0 ? todasLasMedidas : ["Uso de EPP básico"],
+      cobertura_art: {
+        entidad: lastRow.art_name || "No especificada",
+        vigencia: lastRow.art_name ? "Activa" : "No disponible"
       }
-
-      const report = reportsMap.get(row.report_id);
-      if (row.task_name) report.tareas_ejecutadas.add(row.task_name);
-      if (row.trade_name) report.oficios_activos.add(row.trade_name);
-    });
-
-    const registrosAvanceArray = Array.from(reportsMap.values()).map(r => ({
-      ...r,
-      tareas_ejecutadas: r.tareas_ejecutadas.size > 0 ? Array.from(r.tareas_ejecutadas) : ["Sin tareas registradas"],
-      oficios_activos: r.oficios_activos.size > 0 ? Array.from(r.oficios_activos) : ["Sin oficios registrados"]
-    }));
-
-    const lastRow = rows[rows.length - 1];
-    const todasLasMedidas = [...new Set(rows.map(r => r.safety_measure).filter(Boolean))];
-
-    const etapaSegura = lastRow.stage_name || "Etapa General";
-    const estadoSeguro = lastRow.validation_status || "PENDIENTE";
-
-    return {
-      project: {
-        codigo: fixProjectCode(lastRow.project_code),
-        nombre: lastRow.project_name || "Proyecto sin nombre",
-        responsable_tecnico: lastRow.responsible_technician || "No asignado"
-      },
-      periodo: {
-        desde: startDate,
-        hasta: endDate
-      },
-      etapas: {
-        nombre: etapaSegura,
-        estado: estadoSeguro,
-        avance_estimado: lastRow.stage_progress || 0
-      },
-      registros_avance: registrosAvanceArray,
-      medidas_seguridad: {
-        fecha: formatDate(lastRow.report_date),
-        implementadas: todasLasMedidas.length > 0 ? todasLasMedidas : ["Uso de EPP básico"],
-        cobertura_art: {
-          entidad: lastRow.art_name || "No especificada",
-          vigencia: lastRow.art_name ? "Activa" : "No disponible"
-        }
-      },
-      validaciones_tecnicas: {
-        fecha: formatDate(lastRow.report_date),
-        estado: estadoSeguro,
-        etapa: etapaSegura,
-        responsable: lastRow.responsible_technician || "No asignado"
-      }
-    };
-  }
+    },
+    validaciones_tecnicas: {
+      fecha: formatDate(lastRow.report_date),
+      estado: estadoSeguro,
+      etapa: etapaSegura,
+      responsable: lastRow.responsible_technician || "No asignado"
+    }
+  };
+}
   static _formatMonthlyJSON(rows, start, end) {
     const context = {
       proyecto: {
@@ -478,7 +490,7 @@ WHERE p.id_proyecto = $1
             p.nombre as name,
             p.ubicacion as location,
             p.superficie_m2 as "surfaceM2",
-            TO_CHAR(p.fecha_registro, 'YYYY-MM-DD') as "registrationDate",
+            TO_CHAR(p.fecha_registro AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'DD/MM/YYYY'), 'YYYY-MM-DD') as "registrationDate",
             json_build_object(
                 'id', u.id_usuario,
                 'name', u.nombre,
@@ -495,7 +507,7 @@ WHERE p.id_proyecto = $1
         LEFT JOIN SISTEMA_CONSTRUCTIVO sc ON p.id_sistema_constructivo = sc.id_sistema
         LEFT JOIN cobertura_art co ON p.id_art = co.id_art
         LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
-        WHERE p.nombre ILIKE $1 -- ILIKE hace búsqueda insensible a mayúsculas
+        WHERE p.nombre ILIKE $1
         ORDER BY p.id_proyecto DESC;
     `;
 
@@ -516,12 +528,11 @@ WHERE p.id_proyecto = $1
     p.nombre,
     p.ubicacion,
     p.superficie_m2,
-    TO_CHAR(p.fecha_registro, 'DD/MM/YYYY') as fecha_registro,
+    TO_CHAR(p.fecha_registro AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'DD/MM/YYYY') as fecha_registro,,
     u.nombre as responsable_nombre,
     u.matricula as responsable_matricula,
     sc.nombre as sistema_constructivo,
-    ca.nombre_entidad_art as art_entidad, -- Este es el campo que ahora sí va a venir
-    -- ETAPAS Y TAREAS (Anidadas con nombres de estado)
+    ca.nombre_entidad_art as art_entidad, 
     COALESCE(
       (SELECT json_agg(etapa_data)
       FROM (
@@ -553,13 +564,13 @@ WHERE p.id_proyecto = $1
       ) etapa_data), 
       '[]'::json
     ) as etapas,
-    -- ÚLTIMOS REGISTROS DE AVANCE
+    
     COALESCE(
       (SELECT json_agg(registro_data)
       FROM (
         SELECT 
           ra.id_registro_avance,
-          TO_CHAR(ra.fecha, 'DD/MM/YYYY') as fecha,
+          TO_CHAR(ra.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'DD/MM/YYYY') as fecha,
           us.nombre as supervisor_nombre,
           COALESCE(vt.estado, 'PENDIENTE') as estado_validacion
         FROM REGISTRO_AVANCE ra
@@ -574,7 +585,6 @@ WHERE p.id_proyecto = $1
 FROM PROYECTO p
 JOIN USUARIO u ON p.id_responsable = u.id_usuario
 LEFT JOIN SISTEMA_CONSTRUCTIVO sc ON p.id_sistema_constructivo = sc.id_sistema
--- AQUÍ EL CAMBIO CLAVE:
 LEFT JOIN COBERTURA_ART co ON p.id_art = co.id_art
 LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
 WHERE p.id_proyecto = $1;`

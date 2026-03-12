@@ -91,10 +91,7 @@ class ProjectController {
     static async getProjectByName(req, res, next) {
         try {
             const { name } = req.query;
-
             const projects = await ProjectService.searchProjectByName(name);
-
-            console.log("Buscando proyecto con el término:", name);
             return res.status(200).json({
                 success: true,
                 data: projects
@@ -103,33 +100,31 @@ class ProjectController {
             next(error);
         }
     }
+    static async getFullProject(req, res, next) {
+        try {
+            const { projectId } = req.params;
 
-static async getFullProject(req, res, next) {
-    try {
-        const { projectId } = req.params;
+            if (!projectId || isNaN(projectId)) {
+                const error = new Error('projectId must be a valid number');
+                error.status = 400;
+                return next(error);
+            }
+            const project = await ProjectService.getFullProject(projectId);
 
-        if (!projectId || isNaN(projectId)) {
-            const error = new Error('projectId must be a valid number');
-            error.status = 400;
+            if (!project) {
+                const error = new Error('Project not found');
+                error.status = 404;
+                return next(error);
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: project
+            });
+        } catch (error) {
             return next(error);
         }
-
-        const project = await ProjectService.getFullProject(projectId);
-
-        if (!project) {
-            const error = new Error('Project not found');
-            error.status = 404;
-            return next(error);
-        }
-
-        return res.status(200).json({
-            success: true,
-            data: project
-        });
-    } catch (error) {
-        return next(error);
     }
-}
 }
 
 module.exports = ProjectController;
