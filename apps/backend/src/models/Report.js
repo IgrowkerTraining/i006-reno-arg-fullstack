@@ -169,7 +169,7 @@ ORDER BY r.fecha DESC;
     r.id_registro_avance AS reportId,
     r.id_supervisor AS supervisorId,
     r.id_proyecto AS projectId,
-    (r.fecha AT TIME ZONE 'America/Argentina/Buenos_Aires')::date AS date,
+    TO_CHAR(r.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') AS date,
     r.avance_porcentaje AS progressPercentage,
     r.comentario AS comment,
     p.nombre AS projectName,
