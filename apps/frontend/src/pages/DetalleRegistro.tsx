@@ -45,6 +45,21 @@ const DetalleRegistro: React.FC = () => {
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const isArchitect = user?.idRol === 1;
 
+  const getReportId = (value: ReportDetail | null): number | null => {
+    const rawId = (value as any)?.reportId ?? (value as any)?.reportid ?? (value as any)?.id;
+    const parsed = Number(rawId);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
+  const getValidationIdFromReport = (value: ReportDetail | null): number | null => {
+    const rawValidationId = (value as any)?.validationId ?? (value as any)?.validationid;
+    const parsed = Number(rawValidationId);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
+  const getValidationStatus = (value: ReportDetail | null): string =>
+    String((value as any)?.validationStatus ?? (value as any)?.validationstatus ?? "").toUpperCase();
+
   const findValidationIdByReportId = async (reportId: number) => {
     const validations = await api.getValidations();
     const currentValidation = validations.find(
@@ -77,13 +92,21 @@ const DetalleRegistro: React.FC = () => {
           setArtCoverages([]);
         }
 
-        try {
-          const resolvedValidationId = await findValidationIdByReportId(
-            Number(reportResponse?.reportId),
-          );
-          setValidationId(resolvedValidationId);
-        } catch {
-          setValidationId(null);
+        const validationIdFromReport = getValidationIdFromReport(reportResponse);
+        if (validationIdFromReport) {
+          setValidationId(validationIdFromReport);
+        } else {
+          const reportId = getReportId(reportResponse);
+          if (reportId) {
+            try {
+              const resolvedValidationId = await findValidationIdByReportId(reportId);
+              setValidationId(resolvedValidationId);
+            } catch {
+              setValidationId(null);
+            }
+          } else {
+            setValidationId(null);
+          }
         }
       } catch (loadError) {
         const message =
@@ -121,13 +144,16 @@ const DetalleRegistro: React.FC = () => {
       return;
     }
 
-    let currentValidationId = validationId;
+    let currentValidationId = validationId ?? getValidationIdFromReport(report);
     if (!currentValidationId) {
-      try {
-        currentValidationId = await findValidationIdByReportId(Number(report.reportId));
-        setValidationId(currentValidationId);
-      } catch {
-        currentValidationId = null;
+      const reportId = getReportId(report);
+      if (reportId) {
+        try {
+          currentValidationId = await findValidationIdByReportId(reportId);
+          setValidationId(currentValidationId);
+        } catch {
+          currentValidationId = null;
+        }
       }
     }
 
@@ -220,7 +246,7 @@ if (loading) {
                 onClick={() => void handleValidate()}
                 disabled={
                   isValidating ||
-                  report.validationStatus === "APROBADO"
+                  getValidationStatus(report) === "APROBADO"
                 }
                 isLoading={isValidating}
               >
@@ -231,7 +257,7 @@ if (loading) {
         </div>
         {validationMessage ? (
           <p
-            className={`text-sm ${report.validationStatus === "APROBADO"
+            className={`text-sm ${getValidationStatus(report) === "APROBADO"
                 ? "text-green-700"
                 : "text-amber-700"
               }`}
