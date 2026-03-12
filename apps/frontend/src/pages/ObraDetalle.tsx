@@ -249,7 +249,7 @@ const ObraDetalle: React.FC = () => {
                               </Button>
                             )}
                             <span className="flex justify-end text-secondary-plus">{Math.round(Number(report.progressPercentage))}%</span>
-                            <ChevronRight className="text-secondary-plus" onClick={() => navigate(`/dashboard/mis-obras/${obraId}/registros/${report.id}`)} />
+                            <ChevronRight className="text-secondary-plus cursor-pointer" onClick={() => navigate(`/dashboard/mis-obras/${obraId}/registros/${report.id}`)} />
                           </div>
                         </li>
                         <hr className="border-neutro-2" />
