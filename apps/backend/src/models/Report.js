@@ -133,7 +133,6 @@ class Report {
         return await db.any(`
    SELECT 
     r.id_registro_avance AS id,
-    -- Forzamos la conversión a texto con el formato exacto para evitar redondeos del servidor
     TO_CHAR(r.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') AS date,
     p.nombre AS project_name,
     p.ubicacion AS address_project,
@@ -154,7 +153,7 @@ JOIN TIPO_ETAPA te ON e.id_tipo_etapa = te.id_tipo_etapa
 LEFT JOIN VALIDACION_TECNICA v ON r.id_registro_avance = v.id_registro_avance
 GROUP BY 
     r.id_registro_avance, 
-    r.fecha, -- Fundamental incluir la fecha original aquí
+    r.fecha,
     p.nombre, 
     p.ubicacion, 
     u.nombre, 
@@ -175,7 +174,7 @@ ORDER BY r.fecha DESC;
     r.comentario AS comment,
     p.nombre AS projectName,
     u.nombre AS supervisorName,
-    (v.id_validacion AT TIME ZONE 'America/Argentina/Buenos_Aires')::date AS validationId,
+    v.id_validacion AS validationId,
     v.estado AS validationStatus,
     v.comentario AS technicalComment
 FROM REGISTRO_AVANCE r
@@ -235,7 +234,7 @@ WHERE r.id_registro_avance = $1
     ra.comentario as comment,
     vt.id_validacion as "validationId",
     COALESCE(vt.estado, 'PENDIENTE') as "statusName",
-    (vt.fecha_validacion AT TIME ZONE 'America/Argentina/Buenos_Aires')::date AS "validationDate",
+    vt.fecha_validacion AS "validationDate",
     vt.comentario as "technicalComment"
 FROM REGISTRO_AVANCE ra
 JOIN PROYECTO p ON ra.id_proyecto = p.id_proyecto
