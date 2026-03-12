@@ -13,6 +13,7 @@ const RegistroFinalizar = () => {
   const [observacion, setObservacion] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isObservacionEmpty = !observacion.trim();
 
   if (!obraId) return null;
 
@@ -21,18 +22,24 @@ const RegistroFinalizar = () => {
   };
 
   const handleFinalizar = async () => {
-    if (!user?.id) {
-      setError("No se pudo identificar el usuario.");
-      return;
-    }
+  if (!user?.id) {
+  setError("No se pudo identificar al usuario.");
+  return;
+}
 
-    const reportDraft = getReportDraft(obraId);
+const comentarioLimpio = observacion.trim();
 
-    if (!reportDraft.selectedTasks.length) {
-      setError("Debes seleccionar al menos una tarea para finalizar.");
-      return;
-    }
+if (!comentarioLimpio) {
+  setError("Debes ingresar un resumen del registro.");
+  return;
+}
 
+const reportDraft = getReportDraft(obraId);
+
+if (!reportDraft.selectedTasks.length) {
+  setError("Debes seleccionar al menos una tarea.");
+  return;
+}
     setIsSubmitting(true);
     setError(null);
 
@@ -41,7 +48,7 @@ const RegistroFinalizar = () => {
         idSupervisor: Number(user.id),
         idProject: Number(obraId),
         progressPercentage: 45,
-        comment: observacion.trim(),
+        comment: comentarioLimpio,
         selectedTasks: reportDraft.selectedTasks,
         selectedTrades: reportDraft.selectedTrades,
         safetyItems: reportDraft.safetyItems.map((item) => ({
@@ -135,21 +142,27 @@ const RegistroFinalizar = () => {
                 </div>
 
                 <h3 className="text-xl font-semibold text-slate-800">
-                  ¡Todo listo para enviar!
+                  Completá el resumen del registro
                 </h3>
 
                 <p className="max-w-md text-sm text-slate-500">
-                  Se registrará el avance de hoy y se notificará al responsable.
+                  Ingresá un breve resumen para identificar este registro en el historial.
                 </p>
               </div>
 
               <div className="flex justify-center">
+                
                 <textarea
                   value={observacion}
-                  onChange={(e) => setObservacion(e.target.value)}
-                  placeholder="¿Alguna observación extra? (Ej: El material llegó tarde)"
+                  onChange={(e) => {
+                  setObservacion(e.target.value);
+                  if (error) setError(null);
+                  }}
+                  placeholder="Ej: Se completó albañilería y se verificaron las medidas de seguridad"
                   rows={4}
-                  className="w-full max-w-xl resize-none rounded-xl border border-slate-200 bg-[#F3F3F3] p-4 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className={`w-full max-w-xl resize-none rounded-xl border bg-[#F3F3F3] p-4 text-sm text-slate-700 
+                  focus:outline-none focus:ring-2 focus:ring-blue-300 
+                  ${isObservacionEmpty ? "border-red-400 ring-red-200" : "border-slate-200"}`}
                 />
               </div>
 
@@ -169,7 +182,7 @@ const RegistroFinalizar = () => {
                 <button
                   type="button"
                   onClick={() => void handleFinalizar()}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isObservacionEmpty}
                   className="rounded-xl bg-primary px-8 py-4 text-lg font-semibold text-white shadow transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSubmitting ? "Finalizando..." : "Finalizar →"}
