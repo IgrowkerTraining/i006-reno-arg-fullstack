@@ -40,6 +40,40 @@ const Home: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const debouncedSearch = useDebounce(searchTerm, 300)
 
+  const resolveProjectId = async (item: DailyReport): Promise<string | null> => {
+    const rawProjectId = item.project_id ?? item.projectId;
+    if (rawProjectId) {
+      return String(rawProjectId);
+    }
+
+    const reportDetail = await api.getReportById(item.id);
+    const detailProjectId = (reportDetail as any)?.projectId ?? (reportDetail as any)?.projectid;
+    return detailProjectId ? String(detailProjectId) : null;
+  };
+
+  const handleHistoryClick = async (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    item: DailyReport,
+  ) => {
+    event.preventDefault();
+
+    try {
+      const projectId = await resolveProjectId(item);
+      if (!projectId) return;
+
+      navigate(ROUTE_BUILDERS.obraRegistroDetalle(projectId, String(item.id)));
+    } catch (error) {
+      console.error("No se pudo abrir el detalle del registro:", error);
+    }
+  };
+
+  const getHistoryLink = (item: DailyReport): string => {
+    const directProjectId = item.project_id ?? item.projectId;
+    return directProjectId
+      ? ROUTE_BUILDERS.obraRegistroDetalle(String(directProjectId), String(item.id))
+      : ROUTES.DASHBOARD;
+  };
+
 
   const filteredHistorial = useMemo(() => {
     return [...reports]
@@ -179,7 +213,11 @@ const Home: React.FC = () => {
                     {items.map((item) => (
                       <React.Fragment key={item.id}>
                         <li >
-                          <Link to={ROUTE_BUILDERS.obraDetalle(item.id.toString())} className="grid grid-cols-4 items-end gap-5">
+                          <Link
+                            to={getHistoryLink(item)}
+                            onClick={(event) => void handleHistoryClick(event, item)}
+                            className="grid grid-cols-4 items-end gap-5"
+                          >
 
                             <div className="col-span-3 gap-3">
                               {/*  <p className="text-xs text-primary">

@@ -15,7 +15,7 @@ import { ROUTE_BUILDERS } from "../constants/routes";
 
 const statusColors: Record<string, string> = {
   "Pendiente": "border-accent-2 text-accent-2",
-  "Completado": "border",
+  "Finalizado": "border-secondary-plus text-secondary-plus",
 };
 
 
@@ -88,16 +88,13 @@ const ObraDetalle: React.FC = () => {
     </div>
   }
 
-  console.log(reports);
-
 
   return (
     <>
       {project ? (
         <>
-          <div className="flex justify-start mb-4">
-            <Button variant="ghost" className="mt-4 text-md" onClick={() => window.history.back()}> ← Volver a Mis obras</Button>
-          </div>
+          <Button variant="ghost" className="my-4 text-md pl-0 " onClick={() => navigate("/dashboard/mis-obras")}> ← Volver a Mis obras</Button>
+          <h4 className="text-neutro-2 text-lg mb-4">DETALLE DE OBRA</h4>
           <div className="flex flex-col h-[650px] overflow-y-auto gap-4">
             <Card className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-xl border-neutro-2">
               <div>
@@ -161,7 +158,8 @@ const ObraDetalle: React.FC = () => {
                         className={`px-4 py-2 text-sm rounded-full font-medium border ${statusColors[stage.statusName]}`}
                       >
                         {toUpperCase(stage.statusName)}
-                        <Clock className="inline ml-2 w-4 h-4" />
+                        {stage.statusName === "Pendiente" ? <Clock className="inline ml-2 w-4 h-4" /> : <CheckCircle className="inline ml-2 w-4 h-4" />}
+
                       </span>
                     </div>
 
@@ -251,7 +249,7 @@ const ObraDetalle: React.FC = () => {
                               </Button>
                             )}
                             <span className="flex justify-end text-secondary-plus">{Math.round(Number(report.progressPercentage))}%</span>
-                            <ChevronRight className="text-secondary-plus" onClick={() => { }} />
+                            <ChevronRight className="text-secondary-plus" onClick={() => navigate(`/dashboard/mis-obras/${obraId}/registros/${report.id}`)} />
                           </div>
                         </li>
                         <hr className="border-neutro-2" />
@@ -263,10 +261,7 @@ const ObraDetalle: React.FC = () => {
                 )}
               </ul>
             </Card>
-
           </div>
-
-
         </>) : (
         <p>Obra no encontrada </p>
       )

@@ -7,7 +7,6 @@ import { formatDate } from "@/src/utils/formateDate";
 import { User as UserType } from "@/src/types";
 
 interface CardObraProps {
-  key: string;
   codigo: string;
   titulo: string;
   ubicacion: string;

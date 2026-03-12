@@ -71,15 +71,15 @@ const RegistroFinalizar = () => {
           <div className="flex items-start justify-between bg-primary px-8 py-6 text-white md:px-12">
             <div>
               <h1 className="text-3xl font-semibold leading-tight">
-                Reforma
+                Registro diario de obra
               </h1>
               <p className="mt-1 text-sm opacity-95">
-                Registro diario de obra {new Date().toLocaleDateString('es-AR')}
+                {new Date().toLocaleDateString('es-AR')}
               </p>
             </div>
 
             <div className="text-right">
-              <p className="text-4xl font-semibold leading-none"></p>
+              <p className="text-4xl font-semibold leading-none">45%</p>
               <p className="mt-2 text-sm uppercase opacity-95">Avance actual</p>
             </div>
           </div>

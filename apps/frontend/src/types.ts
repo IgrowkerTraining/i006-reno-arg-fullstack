@@ -61,6 +61,8 @@ export interface PlanningCatalogResponse {
 
 export interface DailyReport {
   id: number;
+  project_id?: number;
+  projectId?: number;
   date: string;
   project_name: string;
   supervisor: string;

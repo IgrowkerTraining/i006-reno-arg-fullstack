@@ -74,6 +74,7 @@ export const AppRoutes: React.FC = () => {
       </Route>
 
       <Route path={ROUTES.HOME} element={<RootRedirect />} />
+      <Route path="/index.html" element={<RootRedirect />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -12,7 +12,7 @@ const MisObras: React.FC = () => {
   const { user } = useAuth();
   const { getProjects } = useAuthApi();
   const [projects, setProjects] = React.useState<any[]>([]);
-  const [ isLoading, setIsLoading ] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const [searchTerm, setSearchTerm] = useState("")
   const debouncedSearch = useDebounce(searchTerm, 300)
@@ -49,6 +49,8 @@ const MisObras: React.FC = () => {
     </div>
   }
 
+  console.log(projects[0]);
+
 
   return (
     <>
@@ -64,23 +66,22 @@ const MisObras: React.FC = () => {
       <section className="flex gap-4 overflow-x-auto py-4">
         {filteredProjects && filteredProjects.length > 0 ? (
           filteredProjects.map((obra) => (
-
-            <CardObra
-              key={obra.id}
-              codigo={obra.code}
-              titulo={obra.name}
-              ubicacion={obra.location}
-              fechaInicio={obra.registrationDate}
-              artStatus="ok"
-              seguridadStatus="ok"
-              progreso={Math.round(obra.progress || 0)}
-              responsable={obra.manager?.name || "Sin responsable asignado"}
-              matricula={obra.manager?.license || "Sin matrícula"}
-              onDetalle={() => navigate(ROUTE_BUILDERS.obraDetalle(String(obra.id)))}
-              onRegistro={() => navigate(ROUTE_BUILDERS.obraRegistro(String(obra.id)))}
-              user={user}
-            />
-
+            <React.Fragment key={obra.id}>
+              <CardObra
+                codigo={obra.code}
+                titulo={obra.name}
+                ubicacion={obra.location}
+                fechaInicio={obra.registrationDate}
+                artStatus={obra.config.artCoverageId !== null ? "ok" : "Revisar"}
+                seguridadStatus="ok"
+                progreso={Math.round(obra.progress || 0)}
+                responsable={obra.manager?.name || "Sin responsable asignado"}
+                matricula={obra.manager?.license || "Sin matrícula"}
+                onDetalle={() => navigate(ROUTE_BUILDERS.obraDetalle(String(obra.id)))}
+                onRegistro={() => navigate(ROUTE_BUILDERS.obraRegistro(String(obra.id)))}
+                user={user}
+              />
+            </React.Fragment>
           ))
         ) : (
           <p className="col-span-2 text-slate-500">No se encontraron obras vinculadas a tu cuenta.</p>
