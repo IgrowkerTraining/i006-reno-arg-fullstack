@@ -18,7 +18,7 @@ const DATA = [
   { key: "activeProjects", icon: ChartNoAxesCombined, title: "Obras activas", color: "secondary" },
   { key: "artVigente", icon: ShieldCheck, title: "ART-vigente", color: "accent" },
   { key: "pendingTasks", icon: ClockAlert, title: "Tareas pendientes", color: "primary" },
-  { key: "validatedProjects", icon: ListChecks, title: "Obras validadas", color: "accent-2" },
+  { key: "validatedProjects", icon: ListChecks, title: "Registros validados", color: "accent-2" },
 ];
 
 const Home: React.FC = () => {
@@ -39,6 +39,40 @@ const Home: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("")
   const debouncedSearch = useDebounce(searchTerm, 300)
+
+  const resolveProjectId = async (item: DailyReport): Promise<string | null> => {
+    const rawProjectId = item.project_id ?? item.projectId;
+    if (rawProjectId) {
+      return String(rawProjectId);
+    }
+
+    const reportDetail = await api.getReportById(item.id);
+    const detailProjectId = (reportDetail as any)?.projectId ?? (reportDetail as any)?.projectid;
+    return detailProjectId ? String(detailProjectId) : null;
+  };
+
+  const handleHistoryClick = async (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    item: DailyReport,
+  ) => {
+    event.preventDefault();
+
+    try {
+      const projectId = await resolveProjectId(item);
+      if (!projectId) return;
+
+      navigate(ROUTE_BUILDERS.obraRegistroDetalle(projectId, String(item.id)));
+    } catch (error) {
+      console.error("No se pudo abrir el detalle del registro:", error);
+    }
+  };
+
+  const getHistoryLink = (item: DailyReport): string => {
+    const directProjectId = item.project_id ?? item.projectId;
+    return directProjectId
+      ? ROUTE_BUILDERS.obraRegistroDetalle(String(directProjectId), String(item.id))
+      : ROUTES.DASHBOARD;
+  };
 
 
   const filteredHistorial = useMemo(() => {
@@ -179,18 +213,22 @@ const Home: React.FC = () => {
                     {items.map((item) => (
                       <React.Fragment key={item.id}>
                         <li >
-                          <Link to={ROUTE_BUILDERS.obraDetalle(item.id.toString())} className="grid grid-cols-4 items-end gap-5">
-
+                          <Link
+                            to={getHistoryLink(item)}
+                            onClick={(event) => void handleHistoryClick(event, item)}
+                            className="grid grid-cols-4 items-end gap-5"
+                          >
                             <div className="col-span-3 gap-3">
-                              {/*  <p className="text-xs text-primary">
-                              ETAPA {item.workStage.toUpperCase()}
-                            </p> */}
+                               <p className="text-xs text-primary">
+                              ETAPA {item.stage_name}
+                            </p>
                               <p className="text-[20px] font-bold">{item.comment}</p>
                               <p className="text-sm font-bold">{item.project_name}</p>
-                              <p className="text-xs font-light">Supervisor:{item.supervisor}</p>
+                              <p className="text-xs font-light">{item.address_project}</p>
                             </div>
 
                             <div className="col-span-1 text-right">
+                              <span className={`text-xs ${item.validation_status === "PENDIENTE" ? "text-accent-2" : "text-secondary-plus"} ml-4`}>&bull; {item.validation_status}</span>
                               <p className="text-xs text-primary">
                                 Avance total de obra
                               </p>

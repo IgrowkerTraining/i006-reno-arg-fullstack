@@ -7,13 +7,12 @@ import { formatDate } from "@/src/utils/formateDate";
 import { User as UserType } from "@/src/types";
 
 interface CardObraProps {
-  key: string;
   codigo: string;
   titulo: string;
   ubicacion: string;
   fechaInicio: string;
-  artStatus: "ok" | "warning" | "error" | "Revisar";
-  seguridadStatus: "ok" | "warning" | "error" | "Revisar";
+  artStatus: "vigente" | "warning" | "error" | "revisar";
+  seguridadStatus: "vigente" | "warning" | "error" | "revisar";
   progreso: number;
   responsable: string;
   matricula: string;
@@ -61,7 +60,7 @@ export const CardObra = ({
       {/* Progreso */}
       <div >
         <div className="flex justify-between text-md mb-2">
-          <span>Obra gruesa</span>
+          <span>Avance total</span>
           <span>{progreso}%</span>
         </div>
         <ProgressBar value={progreso} />

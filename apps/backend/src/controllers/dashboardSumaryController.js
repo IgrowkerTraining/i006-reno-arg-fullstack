@@ -11,5 +11,4 @@ class DashboardSummaryController {
         }
     }
 }
-
 module.exports = DashboardSummaryController;

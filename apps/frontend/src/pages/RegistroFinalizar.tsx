@@ -78,10 +78,10 @@ if (!reportDraft.selectedTasks.length) {
           <div className="flex items-start justify-between bg-primary px-8 py-6 text-white md:px-12">
             <div>
               <h1 className="text-3xl font-semibold leading-tight">
-                Reforma Vivienda Familiar
+                Registro diario de obra
               </h1>
               <p className="mt-1 text-sm opacity-95">
-                Registro diario de obra 13/02/26
+                {new Date().toLocaleDateString('es-AR')}
               </p>
             </div>
 

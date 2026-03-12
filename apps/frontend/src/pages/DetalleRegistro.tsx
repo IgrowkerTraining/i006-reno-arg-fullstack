@@ -5,6 +5,7 @@ import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
 import { ROUTE_BUILDERS } from "../constants/routes";
 import { api, ReportDetail } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 
 interface ProjectDetail {
   id: number;
@@ -30,6 +31,7 @@ const formatDate = (value?: string) => {
 };
 
 const DetalleRegistro: React.FC = () => {
+  const { user } = useAuth();
   const { obraId, registroId } = useParams<{ obraId: string; registroId: string }>();
   const navigate = useNavigate();
 
@@ -38,6 +40,33 @@ const DetalleRegistro: React.FC = () => {
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [artCoverages, setArtCoverages] = useState<ArtCoverageOption[]>([]);
+  const [validationId, setValidationId] = useState<number | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const isArchitect = user?.idRol === 1;
+
+  const getReportId = (value: ReportDetail | null): number | null => {
+    const rawId = (value as any)?.reportId ?? (value as any)?.reportid ?? (value as any)?.id;
+    const parsed = Number(rawId);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
+  const getValidationIdFromReport = (value: ReportDetail | null): number | null => {
+    const rawValidationId = (value as any)?.validationId ?? (value as any)?.validationid;
+    const parsed = Number(rawValidationId);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
+  const getValidationStatus = (value: ReportDetail | null): string =>
+    String((value as any)?.validationStatus ?? (value as any)?.validationstatus ?? "").toUpperCase();
+
+  const findValidationIdByReportId = async (reportId: number) => {
+    const validations = await api.getValidations();
+    const currentValidation = validations.find(
+      (item) => Number(item.idRegistroAvance) === Number(reportId),
+    );
+    return currentValidation ? Number(currentValidation.id) : null;
+  };
 
   useEffect(() => {
     if (!obraId || !registroId) return;
@@ -45,6 +74,7 @@ const DetalleRegistro: React.FC = () => {
     const loadDetail = async () => {
       setLoading(true);
       setError(null);
+      setValidationMessage(null);
 
       try {
         const [projectResponse, reportResponse] = await Promise.all([
@@ -60,6 +90,23 @@ const DetalleRegistro: React.FC = () => {
           setArtCoverages(catalog.artsCoverage ?? []);
         } catch {
           setArtCoverages([]);
+        }
+
+        const validationIdFromReport = getValidationIdFromReport(reportResponse);
+        if (validationIdFromReport) {
+          setValidationId(validationIdFromReport);
+        } else {
+          const reportId = getReportId(reportResponse);
+          if (reportId) {
+            try {
+              const resolvedValidationId = await findValidationIdByReportId(reportId);
+              setValidationId(resolvedValidationId);
+            } catch {
+              setValidationId(null);
+            }
+          } else {
+            setValidationId(null);
+          }
         }
       } catch (loadError) {
         const message =
@@ -91,12 +138,61 @@ const DetalleRegistro: React.FC = () => {
     navigate(ROUTE_BUILDERS.obraDetalle(obraId));
   };
 
-  if (loading) {
-    return (
-      <div className="mx-auto w-full max-w-5xl pb-10">
-        <p className="text-sm text-slate-500">Cargando detalle del registro...</p>
-      </div>
-    );
+  const handleValidate = async () => {
+    if (!report) {
+      setValidationMessage("No se encontro el reporte para validar.");
+      return;
+    }
+
+    let currentValidationId = validationId ?? getValidationIdFromReport(report);
+    if (!currentValidationId) {
+      const reportId = getReportId(report);
+      if (reportId) {
+        try {
+          currentValidationId = await findValidationIdByReportId(reportId);
+          setValidationId(currentValidationId);
+        } catch {
+          currentValidationId = null;
+        }
+      }
+    }
+
+    if (!currentValidationId) {
+      setValidationMessage("No se encontro una validacion tecnica asociada a este registro.");
+      return;
+    }
+
+    setIsValidating(true);
+    setValidationMessage(null);
+
+    try {
+      await api.updateValidation(currentValidationId, {
+        status: "APROBADO",
+        observations: "Validado por arquitectura.",
+      });
+
+      if (registroId) {
+        const updatedReport = await api.getReportById(registroId);
+        if (updatedReport) {
+          setReport(updatedReport);
+        }
+      }
+      setValidationMessage("Registro validado correctamente.");
+    } catch (validateError) {
+      const message =
+        validateError instanceof Error
+          ? validateError.message
+          : "No se pudo validar el registro.";
+      setValidationMessage(message);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+if (loading) {
+    return <div className="flex items-center justify-center h-[650px]">
+      <p className="text-xl font-medium text-primary">Cargando detalle de registro diario...</p>
+    </div>
   }
 
   if (error || !project || !report) {
@@ -104,9 +200,9 @@ const DetalleRegistro: React.FC = () => {
       <div className="mx-auto w-full max-w-5xl pb-10 space-y-4">
         <Button type="button" variant="ghost" onClick={handleBack}>
           <ChevronLeft size={16} className="mr-1" />
-          Volver al listado
+          Volver
         </Button>
-        <Card className="border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <Card className="border-red-200 bg-red-50 p-4 text-sm text-red-700 ">
           {error ?? "No se encontro el detalle solicitado."}
         </Card>
       </div>
@@ -115,36 +211,67 @@ const DetalleRegistro: React.FC = () => {
 
   return (
     <div className="mx-auto w-full max-w-5xl pb-10 space-y-4">
-      <Button type="button" variant="ghost" onClick={handleBack}>
+      <Button type="button" variant="ghost" onClick={handleBack} className="pl-0"> 
         <ChevronLeft size={16} className="mr-1" />
-        Volver al listado
+        Volver
       </Button>
-
-      <Card className="space-y-3 border-neutro-2 p-5">
-        <div className="flex items-center gap-3">
-          <span className="rounded-full bg-yellow-200 px-3 py-1 text-xs font-semibold text-neutro-1">
-            {project.code}
-          </span>
-          <span className="text-sm text-slate-500">{formatDate(report.date)}</span>
+      <h4 className="text-neutro-2 text-lg">DETALLE DE REGISTRO DIARIO</h4>
+      <Card className="p-8 rounded-xl border-neutro-2 bg-white">
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="rounded-full bg-yellow-200 px-3 py-1 text-xs font-semibold text-neutro-1">
+                {project.code}
+              </span>
+              <span className="text-sm text-slate-500">{formatDate(report.date)}</span>
+            </div>
+            <h1 className="text-4xl font-bold text-neutro-1">{project.name}</h1>
+            <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+              <span className="flex items-center gap-1">
+                <MapPin size={14} />
+                {project.location}
+              </span>
+              <span className="flex items-center gap-1">
+                <Maximize2 size={14} />
+                {project.surfaceM2} m2
+              </span>
+            </div>
+          </div>
+          {isArchitect ? (
+            <div className="flex justify-start lg:justify-end lg:pr-6">
+              <Button
+                type="button"
+                variant="accent"
+                className="min-w-[170px] px-8 py-2 text-base font-extrabold"
+                onClick={() => void handleValidate()}
+                disabled={
+                  isValidating ||
+                  getValidationStatus(report) === "APROBADO"
+                }
+                isLoading={isValidating}
+              >
+                VALIDAR REGISTRO
+              </Button>
+            </div>
+          ) : null}
         </div>
-        <h1 className="text-4xl font-bold text-neutro-1">{project.name}</h1>
-        <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-          <span className="flex items-center gap-1">
-            <MapPin size={14} />
-            {project.location}
-          </span>
-          <span className="flex items-center gap-1">
-            <Maximize2 size={14} />
-            {project.surfaceM2} m2
-          </span>
-        </div>
+        {validationMessage ? (
+          <p
+            className={`text-sm ${getValidationStatus(report) === "APROBADO"
+                ? "text-green-700"
+                : "text-amber-700"
+              }`}
+          >
+            {validationMessage}
+          </p>
+        ) : null}
       </Card>
 
-      <Card className="border-neutro-2 p-0">
-        <div className="border-b border-neutro-2 px-5 py-4">
+      <Card className="p-0 rounded-xl border-neutro-2 bg-white">
+        <div className="border-b border-neutro-2 px-8 py-5">
           <h2 className="text-xl font-semibold text-neutro-1">Tareas realizadas</h2>
         </div>
-        <div className="space-y-4 p-5">
+        <div className="space-y-4 px-8 py-5">
           {report.tasks?.length ? (
             report.tasks.map((task, index) => (
               <div key={`${task.task_name}-${index}`} className="flex items-center justify-between">
@@ -163,8 +290,8 @@ const DetalleRegistro: React.FC = () => {
         </div>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="space-y-4 border-neutro-2 p-5">
+      <div className="grid gap-4 lg:grid-cols-2 ">
+        <Card className="space-y-4 border-neutro-2 p-5 p-8 rounded-xl bg-white">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-semibold text-neutro-1">Cobertura ART</h3>
             <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
@@ -178,18 +305,17 @@ const DetalleRegistro: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="space-y-4 border-neutro-2 p-5">
+        <Card className="space-y-4 border-neutro-2 p-8 rounded-xl bg-white">
           <h3 className="text-xl font-semibold text-neutro-1">Seguridad e higiene</h3>
           <div className="space-y-2">
             {report.safety?.length ? (
               report.safety.map((item, index) => (
                 <div
                   key={`${item.safety_description}-${index}`}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
-                    item.status
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${item.status
                       ? "border-green-200 bg-green-50 text-green-700"
                       : "border-amber-300 bg-amber-50 text-amber-700"
-                  }`}
+                    }`}
                 >
                   <span>{item.safety_description}</span>
                   {item.status ? "Cumple" : "Observado"}

@@ -17,6 +17,7 @@ const CardGenerateAI: React.FC<CardGenerateAIProps> = ({ id }) => {
     const navigate = useNavigate();
 
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const [month, setMonth] = useState("");
     const [year, setYear] = useState("")
@@ -25,6 +26,7 @@ const CardGenerateAI: React.FC<CardGenerateAIProps> = ({ id }) => {
 
         if (!id || !month || !year) return;
         try {
+              setErrorMessage(null);   
             setLoadingAnalysis(true);
             const response = await api.generateAnalysis(
                 id,
@@ -43,16 +45,16 @@ const CardGenerateAI: React.FC<CardGenerateAIProps> = ({ id }) => {
             console.error("Error generando análisis", error)
 
             if (error.message?.includes("Data not found")) {
-                alert("No hay registros para ese proyecto en el período seleccionado.")
+                setErrorMessage("No hay registros para este proyecto en el período seleccionado.")
             } else {
-                alert("Ocurrió un error al generar el análisis.")
+                setErrorMessage("Ocurrió un error al generar el análisis.")
             }
         } finally {
             setLoadingAnalysis(false);
         }
     };
 
- 
+
     return (
         <Card className="p-6 mx-4 my-6 rounded-lg bg-neutro-3/60 border-neutro-3">
             {loadingAnalysis ? (
@@ -102,6 +104,11 @@ const CardGenerateAI: React.FC<CardGenerateAIProps> = ({ id }) => {
                             GENERAR ANALISIS IA
                         </Button>
                     </>)}
+            {errorMessage && (
+                <p className="text-red-500 text-sm mt-2">
+                    {errorMessage}
+                </p>
+            )}
         </Card>
     )
 }

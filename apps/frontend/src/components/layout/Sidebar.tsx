@@ -91,7 +91,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile }: Props) {
                         {user?.name && user.lastName ? `${user.name.charAt(0)}${user.lastName.charAt(0)}` : "U"}
                     </span>
                     {!collapsed && (
-                        <div className="flex flex-col items-start">
+                        <div className="flex flex-col items-start text-left">
                             <p className="text-primary text-sm font-bold">
                                 {user?.name && user.lastName ? `${user.name} ${user.lastName}` : "Usuario"}
                             </p>

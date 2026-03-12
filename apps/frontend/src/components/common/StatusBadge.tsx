@@ -1,14 +1,14 @@
 interface StatusBadgeProps {
   label: string;
-  status: "ok" | "warning" | "error" | "Revisar";
+  status: "vigente" | "warning" | "error" | "revisar";
 }
 
 export const StatusBadge = ({ label, status }: StatusBadgeProps) => {
   const statusStyles = {
-    ok: "text-green-600",
+    vigente: "text-green-600",
     warning: "text-orange-500",
     error: "text-red-600",
-    Revisar:"text-yellow-500"
+    revisar:"text-yellow-500"
   };
 
   return (

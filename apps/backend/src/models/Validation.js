@@ -42,9 +42,8 @@ class Validation {
             v.id_registro_avance AS "idRegistroAvance",
             v.id_responsable_tecnico AS "idResponsableTecnico",
             u.nombre AS "nombreResponsable",
-            -- Aplanamos las fechas con TO_CHAR
-            TO_CHAR(v.fecha_creacion, 'DD/MM/YYYY HH24:MI') AS "fechaCreacion",
-            TO_CHAR(v.fecha_validacion, 'DD/MM/YYYY HH24:MI') AS "fechaValidacion",
+            TO_CHAR(v.fecha_creacion AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'DD/MM/YYYY HH24:MI') AS "fechaCreacion",
+            TO_CHAR(v.fecha_validacion AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'DD/MM/YYYY HH24:MI') AS "fechaValidacion",
             v.estado,
             v.comentario
         FROM VALIDACION_TECNICA v

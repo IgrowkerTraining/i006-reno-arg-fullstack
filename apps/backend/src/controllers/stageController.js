@@ -1,4 +1,3 @@
-const e = require('express');
 const StageService = require('../services/stageService');
 
 class StageController {

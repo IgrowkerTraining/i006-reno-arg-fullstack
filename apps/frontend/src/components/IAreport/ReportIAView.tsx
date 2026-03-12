@@ -4,6 +4,7 @@ import { Button } from "../common/Button"
 import { handleExportPDF } from "@/src/utils/exportReport"
 import { Card } from "../common/Card"
 import { formatDate } from "@/src/utils/formateDate"
+import { useNavigate } from "react-router-dom"
 
 type ReportIAViewProps = {
     dataAnalysis: any
@@ -15,83 +16,54 @@ const ReportIAView: React.FC<ReportIAViewProps> = ({ dataAnalysis, month, year }
 
     const reportRef = useRef<HTMLDivElement>(null);
 
+    const navigate = useNavigate()
+
     if (!dataAnalysis) {
         return <p>No hay análisis disponible</p>
     }
 
-    
-/*     const normalizedData = {
-        proyecto: dataAnalysis.Proyecto?.Nombre ?? dataAnalysis.resultado.proyecto.nombre,
+    const result =
+        dataAnalysis?.content?.resultado ??
+        dataAnalysis?.resultado ??
+        dataAnalysis?.analysis?.resultado;
+
+    const normalizedData = {
+        proyecto:
+            result?.Proyecto?.Nombre ??
+            result?.proyecto?.nombre,
 
         periodoAnalizado:
-            dataAnalysis.content.resultado["Período analizado"] ??
-            dataAnalysis.resultado.periodo_analizado,
+            result?.["Período analizado"] ??
+            result?.periodo_analizado,
 
         fechaGeneracion:
-            dataAnalysis.createdAt,
+            dataAnalysis?.createdAt ??
+            result?.["Fecha de generación"] ??
+            result?.fecha_de_generacion,
 
         resumen:
-            dataAnalysis.content.resultado["Resumen general del estado de la obra"] ??
-            dataAnalysis.resultado.resumen_general_del_estado_de_la_obra,
+            result?.["Resumen general del estado de la obra"] ??
+            result?.resumen_general_del_estado_de_la_obra,
 
         ejecucion:
-            dataAnalysis.content.resultado["Ejecución y planificación"] ??
-            dataAnalysis.resultado.ejecucion_y_planificacion,
+            result?.["Ejecución y planificación"] ??
+            result?.ejecucion_y_planificacion,
 
         seguridad:
-            dataAnalysis.content.resultado["Medidas de seguridad y cumplimiento"] ??
-            dataAnalysis.resultado.medidas_de_seguridad_y_cumplimiento,
+            result?.["Medidas de seguridad y cumplimiento"] ??
+            result?.medidas_de_seguridad_y_cumplimiento,
 
         validaciones:
-            dataAnalysis.content.resultado["Validaciones técnicas"] ??
-            dataAnalysis.resultado.validaciones_tecnicas,
+            result?.["Validaciones técnicas"] ??
+            result?.validaciones_tecnicas,
 
         observacion:
-            dataAnalysis.content.resultado["Observación general"] ??
-            dataAnalysis.resultado.observacion_general,
+            result?.["Observación general"] ??
+            result?.observacion_general,
     };
- */
-
-    const result =
-  dataAnalysis?.content?.resultado ??
-  dataAnalysis?.resultado ??
-  dataAnalysis?.analysis?.resultado;
-
-const normalizedData = {
-  proyecto:
-    result?.Proyecto?.Nombre ??
-    result?.proyecto?.nombre,
-
-  periodoAnalizado:
-    result?.["Período analizado"] ??
-    result?.periodo_analizado,
-
-  fechaGeneracion:
-    dataAnalysis?.createdAt ??
-    result?.["Fecha de generación"] ??
-    result?.fecha_de_generacion,
-
-  resumen:
-    result?.["Resumen general del estado de la obra"] ??
-    result?.resumen_general_del_estado_de_la_obra,
-
-  ejecucion:
-    result?.["Ejecución y planificación"] ??
-    result?.ejecucion_y_planificacion,
-
-  seguridad:
-    result?.["Medidas de seguridad y cumplimiento"] ??
-    result?.medidas_de_seguridad_y_cumplimiento,
-
-  validaciones:
-    result?.["Validaciones técnicas"] ??
-    result?.validaciones_tecnicas,
-
-  observacion:
-    result?.["Observación general"] ??
-    result?.observacion_general,
-};
     return (
+        <>
+        <Button variant="ghost" className="my-4 text-md pl-0" onClick={() => navigate(-1)}> ← Volver</Button>
         <div ref={reportRef}>
             <h3 className="flex items-center gap-2 text-secondary-plus font-bold text-2xl">
                 <Flower size={20} /> ANÁLISIS ASISTIDO POR IA
@@ -155,6 +127,7 @@ const normalizedData = {
                 </Card>
             </section>
         </div>
+        </>
     )
 }
 

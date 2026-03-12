@@ -33,7 +33,7 @@ static async findAllByProject(projectId) {
         SELECT 
             a.id_analisis AS id_analisis,
             a.id_proyecto, 
-            a.fecha, 
+            (a.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires') AS fecha, 
             a.contenido_json, 
             p.ubicacion 
         FROM ANALISIS_IA a
@@ -48,18 +48,32 @@ static async findAllByProject(projectId) {
 
     static async findById(id) {
         const result = await db.oneOrNone(`
-        SELECT * FROM ANALISIS_IA 
+        SELECT 
+            id_analisis,
+            id_proyecto,
+            (fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires') AS fecha,
+            contenido_json
+        FROM ANALISIS_IA 
         WHERE id_analisis = $1
     `, [id]);
         return result ? new AnalysisIA(result) : null;
     }
 static async getAllAnalysis() {
-    const results = await db.any(`SELECT * FROM ANALISIS_IA ORDER BY fecha DESC`);
+    const results = await db.any(`
+        SELECT 
+            id_analisis,
+            id_proyecto,
+            (fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires') AS fecha,
+            contenido_json
+        FROM ANALISIS_IA 
+        ORDER BY fecha DESC
+    `);
     
     if (!results) return [];
 
     return results.map(row => new AnalysisIA(row));
 }
+/*
 static async findById(id) {
     const result = await db.oneOrNone(`
         SELECT * FROM ANALISIS_IA 
@@ -68,6 +82,7 @@ static async findById(id) {
     
     return result ? new AnalysisIA(result) : null;
 }
+    */
 }
 
 module.exports = AnalysisIA;
