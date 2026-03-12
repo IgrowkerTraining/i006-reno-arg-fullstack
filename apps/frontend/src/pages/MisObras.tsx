@@ -70,8 +70,8 @@ const MisObras: React.FC = () => {
                 titulo={obra.name}
                 ubicacion={obra.location}
                 fechaInicio={obra.registrationDate}
-                artStatus={obra.config.artCoverageId !== null ? "ok" : "Revisar"}
-                seguridadStatus="ok"
+                artStatus={obra.config.artCoverageId !== null ? "vigente" : "revisar"}
+                seguridadStatus="vigente"
                 progreso={Math.round(obra.progress || 0)}
                 responsable={obra.manager?.name || "Sin responsable asignado"}
                 matricula={obra.manager?.license || "Sin matrícula"}

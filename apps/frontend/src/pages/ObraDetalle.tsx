@@ -132,7 +132,7 @@ const ObraDetalle: React.FC = () => {
 
               <div className="w-3/4  ">
                 <div className="flex justify-between text-sm font-semibold my-2">
-                  <span className="">Obra gruesa</span>
+                  <span className="">Avance total de la obra</span>
                   <span>{Math.round(project.progress || 0)}%</span>
                 </div>
                 <ProgressBar value={Math.round(project.progress || 0)} />

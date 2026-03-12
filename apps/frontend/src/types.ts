@@ -65,6 +65,9 @@ export interface DailyReport {
   projectId?: number;
   date: string;
   project_name: string;
+  address_project: string;
+  stage_name: string;
+  task_name: string;
   supervisor: string;
   progress_percentage: string;
   comment: string;
