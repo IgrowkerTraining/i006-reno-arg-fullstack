@@ -11,8 +11,8 @@ interface CardObraProps {
   titulo: string;
   ubicacion: string;
   fechaInicio: string;
-  artStatus: "vigente" | "warning" | "error" | "revisar";
-  seguridadStatus: "vigente" | "warning" | "error" | "revisar";
+  artStatus: "vigente" | "cumple" | "warning" | "error" | "observaciones";
+  seguridadStatus: "vigente" | "cumple" | "warning" | "error" | "observaciones" | "sin datos";
   progreso: number;
   responsable: string;
   matricula: string;
@@ -47,7 +47,7 @@ export const CardObra = ({
           <HardHat className="text-primary w-10 h-10 bg-accent/50 rounded-full p-1.5" />
           </div>
 
-      <h3 className="text-3xl font-semibold" >{titulo}</h3>
+      <h3 className="text-3xl font-semibold min-h-[68px] leading-tight" >{titulo}</h3>
       <p className="text-md flex items-center"><MapPin className="inline mr-2 size-5" />{ubicacion}</p>
       <p className="text-sm"><Calendar className="inline mr-2 size-5" />Fecha de inicio: {formatDate(fechaInicio)}</p>
 

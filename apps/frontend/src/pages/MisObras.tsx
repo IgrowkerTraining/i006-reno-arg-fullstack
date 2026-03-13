@@ -42,6 +42,12 @@ const MisObras: React.FC = () => {
     return searchMatch
   })
 
+  const getSafetyStatus = (safetyMetrics: any) => {
+    if (!safetyMetrics) return "sin datos";
+    if (safetyMetrics.status === "CUMPLE") return "cumple";
+    return "observaciones";
+  };
+
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-[650px]">
@@ -70,8 +76,8 @@ const MisObras: React.FC = () => {
                 titulo={obra.name}
                 ubicacion={obra.location}
                 fechaInicio={obra.registrationDate}
-                artStatus={obra.config.artCoverageId !== null ? "vigente" : "revisar"}
-                seguridadStatus="vigente"
+                artStatus={obra.config.artCoverageId !== null ? "vigente" : "observaciones"}
+                seguridadStatus={getSafetyStatus(obra.safetyMetrics)}
                 progreso={Math.round(obra.progress || 0)}
                 responsable={obra.manager?.name || "Sin responsable asignado"}
                 matricula={obra.manager?.license || "Sin matrícula"}
