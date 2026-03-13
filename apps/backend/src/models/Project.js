@@ -9,12 +9,14 @@ class Project {
     this.surfaceM2 = parseFloat(data.surfaceM2) || 0;
     this.registrationDate = data.registrationDate;
     this.progress = parseFloat(data.projectProgress || data.project_progress || data.progress || 0);
+    this.safetyMetrics = data.safetyMetrics || null;
 
     this.manager = data.manager || {
       id: data.idResponsable,
       name: data.managerName,
       license: data.managerLicense
     };
+
     this.config = data.config || {
       constructionSystemId: data.idSistemaConstructivo,
       constructionSystemName: data.constructionSystemName,
@@ -26,8 +28,9 @@ class Project {
       ...stage,
       tasks: stage.tasks || [] 
     }));
-  }
-  toJSON() {
+}
+
+toJSON() {
     return {
       id: this.id,
       code: this.code,
@@ -36,6 +39,7 @@ class Project {
       surfaceM2: this.surfaceM2,
       registrationDate: this.registrationDate,
       progress: this.progress,
+      safetyMetrics: this.safetyMetrics,
       manager: this.manager,
       config: this.config,
       stages: this.stages 
@@ -45,35 +49,49 @@ class Project {
   static async getAll() {
     const sql = `
       SELECT 
-            p.id_proyecto as id,
-            p.codigo as code,
-            p.nombre as name,
-            p.ubicacion as location,
-            p.superficie_m2 as "surfaceM2",
-            TO_CHAR(p.fecha_registro AT TIME ZONE 'UTC' AT TIME ZONE'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') as "registrationDate",
-            COALESCE(
-                (SELECT ROUND(AVG(progreso), 2) 
-                 FROM ETAPA 
-                 WHERE id_proyecto = p.id_proyecto), 
-            0) as "projectProgress",
+    p.id_proyecto as id,
+    p.codigo as code,
+    p.nombre as name,
+    p.ubicacion as location,
+    p.superficie_m2 as "surfaceM2",
+    TO_CHAR(p.fecha_registro AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD') as "registrationDate",
+    COALESCE(
+        (SELECT ROUND(AVG(progreso), 2) 
+         FROM ETAPA 
+         WHERE id_proyecto = p.id_proyecto), 
+    0) as "projectProgress",
+    json_build_object('id', u.id_usuario, 'name', u.nombre, 'license', u.matricula) as manager,
+    json_build_object(
+        'constructionSystemId', p.id_sistema_constructivo,
+        'constructionSystemName', sc.nombre,
+        'artCoverageId', p.id_art,
+        'artName', ca.nombre_entidad_art
+    ) as config,
+    (
+        SELECT json_build_object(
+            'lastReportId', ra.id_registro_avance,
+            'safeCount', COUNT(CASE WHEN rs.cumple = true THEN 1 END),
+            'unsafeCount', COUNT(CASE WHEN rs.cumple = false THEN 1 END),
+            'status', CASE 
+                WHEN COUNT(CASE WHEN rs.cumple = false THEN 1 END) > 0 THEN 'NO CUMPLE'
+                WHEN COUNT(CASE WHEN rs.cumple = true THEN 1 END) > 0 THEN 'CUMPLE'
+                ELSE 'PENDIENTE'
+            END
+        )
+        FROM REGISTRO_AVANCE ra
+        LEFT JOIN REGISTRO_SEGURIDAD rs ON ra.id_registro_avance = rs.id_registro_avance
+        WHERE ra.id_proyecto = p.id_proyecto
+        GROUP BY ra.id_registro_avance, ra.fecha
+        ORDER BY ra.fecha DESC, ra.id_registro_avance DESC
+        LIMIT 1
+    ) as "safetyMetrics"
 
-            json_build_object(
-                'id', u.id_usuario,
-                'name', u.nombre,
-                'license', u.matricula
-            ) as manager,
-            json_build_object(
-                'constructionSystemId', p.id_sistema_constructivo,
-                'constructionSystemName', sc.nombre,
-                'artCoverageId', p.id_art,
-                'artName', ca.nombre_entidad_art
-            ) as config
-        FROM PROYECTO p
-        LEFT JOIN USUARIO u ON p.id_responsable = u.id_usuario
-        LEFT JOIN SISTEMA_CONSTRUCTIVO sc ON p.id_sistema_constructivo = sc.id_sistema
-        LEFT JOIN cobertura_art co ON p.id_art = co.id_art
-        LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
-        ORDER BY p.id_proyecto DESC;
+FROM PROYECTO p
+LEFT JOIN USUARIO u ON p.id_responsable = u.id_usuario
+LEFT JOIN SISTEMA_CONSTRUCTIVO sc ON p.id_sistema_constructivo = sc.id_sistema
+LEFT JOIN cobertura_art co ON p.id_art = co.id_art
+LEFT JOIN CAT_ART ca ON co.id_cat_art = ca.id_cat_art
+ORDER BY p.id_proyecto DESC;
     `;
 
     const results = await db.any(sql);
